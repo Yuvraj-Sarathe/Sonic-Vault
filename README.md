@@ -22,8 +22,6 @@ The ultimate offline music player — your music, your covers, your lyrics, your
 | Android | ✅ Released |
 | Linux   | 🔧 CI builds |
 | macOS   | 🔧 CI builds |
-| iOS     | 🔧 CI builds (requires Apple Developer account) |
-| Web     | ⚠️ Blocked by FFI dependencies |
 
 ## Download
 
