@@ -1,0 +1,100 @@
+name: Sonic Vault Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flutter/setup-flutter@v4
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - name: Package Windows build
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath SonicVault-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SonicVault-windows
+          path: SonicVault-windows.zip
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flutter/setup-flutter@v4
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SonicVault-android
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flutter/setup-flutter@v4
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build libgtk-3-dev
+      - run: flutter build linux --release
+      - name: Package Linux build
+        run: |
+          tar -czf SonicVault-linux.tar.gz -C build/linux/x64/release/bundle .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SonicVault-linux
+          path: SonicVault-linux.tar.gz
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flutter/setup-flutter@v4
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build macos --release
+      - name: Package macOS build
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../../SonicVault-macos.zip Sonic\ Vault.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SonicVault-macos
+          path: SonicVault-macos.zip
+
+  create-release:
+    name: Create Release
+    needs: [build-windows, build-android, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+      - name: Create GitHub Release
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            SonicVault-windows/SonicVault-windows.zip \
+            SonicVault-android/app-release.apk \
+            SonicVault-linux/SonicVault-linux.tar.gz \
+            SonicVault-macos/SonicVault-macos.zip \
+            --title "${{ github.ref_name }}" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
