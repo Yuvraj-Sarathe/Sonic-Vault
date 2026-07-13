@@ -1,0 +1,60 @@
+name: sonicvault
+description: "The ultimate offline music player — your music, your covers, your lyrics, your rules."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.5.0
+  riverpod_annotation: ^2.3.0
+
+  # Database
+  drift: ^2.16.0
+  sqlite3_flutter_libs: ^0.5.0
+  path_provider: ^2.1.0
+
+  # Audio
+  just_audio: ^0.9.36
+  just_audio_windows: ^0.2.3
+
+  # Audio Metadata
+  audio_metadata_reader: ^1.6.0
+
+  # File System
+  file_picker: ^11.0.2
+  permission_handler: ^11.3.0
+
+  # UI
+  google_fonts: ^6.2.0
+  flutter_animate: ^4.5.0
+
+  # Image
+  image_picker: ^1.0.0
+
+  # Utilities
+  path: ^1.9.0
+  uuid: ^4.3.0
+  crypto: ^3.0.0
+  intl: ^0.20.3
+  shared_preferences: ^2.2.0
+
+  # Navigation
+  go_router: ^14.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  drift_dev: ^2.16.0
+  build_runner: ^2.4.0
+  riverpod_generator: ^2.4.0
+  mockito: ^5.4.0
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
