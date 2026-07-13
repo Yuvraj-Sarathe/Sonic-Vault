@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sonic Vault — The offline music player</title>
+  <meta name="description" content="Sonic Vault is a free, offline music player for Windows, Android, Linux, and macOS. Your music, your covers, your lyrics, your rules." />
+  <meta property="og:title" content="Sonic Vault — The offline music player" />
+  <meta property="og:description" content="Your music, your covers, your lyrics, your rules. Free and open-source." />
+  <meta property="og:url" content="https://sonicvault.vercel.app" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #07070d;
+      --surface: rgba(20, 20, 35, 0.6);
+      --surface-border: rgba(255,255,255,0.06);
+      --text: #e2e2ee;
+      --text-muted: #8888a0;
+      --accent: #d4a574;
+      --accent-glow: rgba(212, 165, 116, 0.3);
+      --accent2: #7c6ddb;
+      --radius: 16px;
+      --font-display: 'Unbounded', sans-serif;
+      --font-body: 'Sora', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── ambient bg ── */
+    #visualizer-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+    #gradient-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,109,219,0.08) 0%, transparent 70%),
+                  radial-gradient(ellipse 60% 50% at 80% 100%, rgba(212,165,116,0.06) 0%, transparent 70%);
+    }
+
+    /* ── layout ── */
+    .container {
+      position: relative;
+      z-index: 2;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .logo {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── hero ── */
+    .hero {
+      padding: 100px 0 80px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 100px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      border: 1px solid rgba(212,165,116,0.2);
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+    .hero h1 .line2 { display: block; color: var(--accent); }
+    .hero p {
+      font-size: 1.125rem;
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.25s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #0a0a0f;
+    }
+    .btn-primary:hover {
+      background: #e0b88a;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--accent-glow);
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .btn-outline:hover {
+      border-color: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.04);
+      transform: translateY(-2px);
+    }
+    .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* ── section common ── */
+    section { padding: 100px 0; }
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      color: var(--text-muted);
+      max-width: 520px;
+      font-size: 1rem;
+    }
+
+    /* ── features ── */
+    #features { text-align: center; }
+    #features .section-sub { margin: 0 auto 56px; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      text-align: left;
+    }
+    .feature-card {
+      padding: 28px 24px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(12px);
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255,255,255,0.1);
+    }
+    .feature-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--accent-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 1.25rem;
+    }
+    .feature-card h3 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ── platforms ── */
+    #platforms { text-align: center; }
+    #platforms .section-sub { margin: 0 auto 48px; }
+    .platform-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .platform-card {
+      padding: 28px 20px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(12px);
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.3s, border-color 0.3s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .platform-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+    }
+    .platform-icon { font-size: 2rem; }
+    .platform-name {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .platform-status {
+      font-size: 0.8rem;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-weight: 500;
+    }
+    .status-released {
+      background: rgba(74, 222, 128, 0.12);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.2);
+    }
+    .status-ci {
+      background: rgba(250, 204, 21, 0.1);
+      color: #facc15;
+      border: 1px solid rgba(250, 204, 21, 0.2);
+    }
+
+    /* ── download ── */
+    #download { text-align: center; }
+    #download .section-sub { margin: 0 auto 48px; }
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      text-align: left;
+    }
+    .download-card {
+      padding: 28px 24px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(12px);
+    }
+    .download-card h3 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+    .download-card .os-desc {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+    .dl-steps {
+      list-style: none;
+      margin-bottom: 20px;
+    }
+    .dl-steps li {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding: 4px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+    .dl-steps li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 11px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.6;
+    }
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #0a0a0f;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.25s;
+    }
+    .dl-btn:hover {
+      background: #e0b88a;
+      transform: translateY(-2px);
+    }
+    .dl-btn svg { width: 16px; height: 16px; }
+
+    /* ── github ── */
+    #github { text-align: center; }
+    #github .section-sub { margin: 0 auto 32px; }
+    .gh-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 32px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(12px);
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.3s;
+    }
+    .gh-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+    }
+    .gh-icon svg { width: 32px; height: 32px; }
+    .gh-info { text-align: left; }
+    .gh-info .name {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .gh-info .desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* ── footer ── */
+    footer {
+      text-align: center;
+      padding: 48px 0;
+      border-top: 1px solid var(--surface-border);
+      color: var(--text-muted);
+      font-size: 0.825rem;
+    }
+    footer a { color: var(--text); text-decoration: none; }
+
+    /* ── scroll reveal ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── responsive ── */
+    @media (max-width: 640px) {
+      nav { flex-direction: column; gap: 12px; }
+      .nav-links { gap: 20px; }
+      .hero { padding: 60px 0 48px; }
+      section { padding: 60px 0; }
+      .features-grid, .download-grid { grid-template-columns: 1fr; }
+      .platform-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- visualizer -->
+  <canvas id="visualizer-canvas"></canvas>
+  <div id="gradient-overlay"></div>
+
+  <!-- nav -->
+  <div class="container">
+    <nav>
+      <div class="logo">Sonic<span>Vault</span></div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#platforms">Platforms</a>
+        <a href="#download">Download</a>
+        <a href="https://github.com/Yuvraj-Sarathe/Sonic-Vault" target="_blank">GitHub</a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">v1.0.0 — Open Source</div>
+      <h1>
+        Your music.
+        <span class="line2">Your rules.</span>
+      </h1>
+      <p>
+        Sonic Vault is a free, offline music player that puts you in control.
+        Play from your local files, set your own cover art, sync lyrics, and shape your sound
+        — no subscriptions, no streaming, no noise.
+      </p>
+      <div class="hero-buttons">
+        <a href="#download" class="btn btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+          Download
+        </a>
+        <a href="https://github.com/Yuvraj-Sarathe/Sonic-Vault" target="_blank" class="btn btn-outline">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- features -->
+  <section id="features">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Everything you need</div>
+        <h2 class="section-title">Built for music lovers</h2>
+        <p class="section-sub">
+          No streaming, no accounts, no distractions. Just your local library,
+          organized the way you want it.
+        </p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">🎵</div>
+          <h3>Play from local files</h3>
+          <p>Reads ID3 tags, embedded cover art, and audio properties directly from your music files. No import needed.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🖼️</div>
+          <h3>Custom covers</h3>
+          <p>Pick any image as album art for any song or playlist. Your library, your look.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">📋</div>
+          <h3>Playlists</h3>
+          <p>Create, rename, reorder, and export playlists in M3U format. Full drag-and-drop support.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🎤</div>
+          <h3>Synchronized lyrics</h3>
+          <p>Load LRC files for karaoke-style lyrics that scroll in time with your music.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🎛️</div>
+          <h3>10-band equalizer</h3>
+          <p>Built-in equalizer with presets. Fine-tune your sound to match your headphones or room.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🔊</div>
+          <h3>Volume normalization</h3>
+          <p>Per-song volume leveling ensures consistent playback across your entire library.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- platforms -->
+  <section id="platforms">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Available everywhere</div>
+        <h2 class="section-title">Platforms</h2>
+        <p class="section-sub">Download and run on your platform of choice. More coming as CI builds mature.</p>
+      </div>
+      <div class="platform-grid">
+        <a href="https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases" target="_blank" class="platform-card reveal">
+          <div class="platform-icon">🪟</div>
+          <div class="platform-name">Windows</div>
+          <span class="platform-status status-released">Released</span>
+        </a>
+        <a href="https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases" target="_blank" class="platform-card reveal">
+          <div class="platform-icon">📱</div>
+          <div class="platform-name">Android</div>
+          <span class="platform-status status-released">Released</span>
+        </a>
+        <div class="platform-card reveal">
+          <div class="platform-icon">🐧</div>
+          <div class="platform-name">Linux</div>
+          <span class="platform-status status-ci">CI builds</span>
+        </div>
+        <div class="platform-card reveal">
+          <div class="platform-icon">🍎</div>
+          <div class="platform-name">macOS</div>
+          <span class="platform-status status-ci">CI builds</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- download -->
+  <section id="download">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Get started</div>
+        <h2 class="section-title">Download Sonic Vault</h2>
+        <p class="section-sub">Grab the latest release from GitHub. Choose your platform and you're set.</p>
+      </div>
+      <div class="download-grid">
+        <div class="download-card reveal">
+          <h3>Windows</h3>
+          <p class="os-desc">Standalone .exe, no installer needed</p>
+          <ol class="dl-steps">
+            <li>Download SonicVault-windows.zip</li>
+            <li>Extract the archive</li>
+            <li>Run sonicvault.exe</li>
+          </ol>
+          <a href="https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases" target="_blank" class="dl-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Download for Windows
+          </a>
+        </div>
+        <div class="download-card reveal">
+          <h3>Android</h3>
+          <p class="os-desc">APK for sideload installation</p>
+          <ol class="dl-steps">
+            <li>Download app-release.apk</li>
+            <li>Enable Install from unknown sources</li>
+            <li>Open the APK to install</li>
+          </ol>
+          <a href="https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases" target="_blank" class="dl-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Download APK
+          </a>
+        </div>
+        <div class="download-card reveal">
+          <h3>Linux / macOS</h3>
+          <p class="os-desc">CI-built bundles (coming soon)</p>
+          <ol class="dl-steps">
+            <li>Download the archive for your platform</li>
+            <li>Extract and run the binary</li>
+            <li>Or build from source with Flutter</li>
+          </ol>
+          <a href="https://github.com/Yuvraj-Sarathe/Sonic-Vault#building-from-source" target="_blank" class="dl-btn" style="background: transparent; border:1px solid rgba(255,255,255,0.12); color: var(--text);">
+            Build from source →
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- github -->
+  <section id="github">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Open Source</div>
+        <h2 class="section-title">MIT Licensed</h2>
+        <p class="section-sub">Sonic Vault is free and open-source. Contributions, issues, and stars are welcome.</p>
+        <a href="https://github.com/Yuvraj-Sarathe/Sonic-Vault" target="_blank" class="gh-card">
+          <span class="gh-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          </span>
+          <span class="gh-info">
+            <div class="name">Yuvraj-Sarathe/Sonic-Vault</div>
+            <div class="desc">Star on GitHub · Report issues · Contribute</div>
+          </span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer>
+    <div class="container">
+      <p>Built with Flutter &amp; Dart. Released under MIT License.</p>
+      <p style="margin-top:4px;">
+        <a href="https://github.com/Yuvraj-Sarathe" target="_blank">© Yuvraj Sarathe</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // ── animated waveform visualizer ──
+    const canvas = document.getElementById('visualizer-canvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, bars;
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      bars = Math.floor(w / 12);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    let dataArray = new Uint8Array(analyser.frequencyBinCount);
+    let isPlaying = false;
+
+    // synthetic oscillator for ambient visualizer
+    let osc, gain;
+    function startOsc() {
+      if (isPlaying) return;
+      osc = audioCtx.createOscillator();
+      gain = audioCtx.createGain();
+      gain.gain.value = 0;
+      osc.type = 'sawtooth';
+      osc.frequency.value = 80;
+      anal = audioCtx.createAnalyser();
+      anal.fftSize = 256;
+      osc.connect(anal);
+      anal.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      isPlaying = true;
+    }
+
+    // start audio context on first interaction
+    document.addEventListener('click', () => {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      startOsc();
+    }, { once: true });
+
+    function draw() {
+      requestAnimationFrame(draw);
+      ctx.clearRect(0, 0, w, h);
+
+      if (isPlaying) {
+        anal.getByteFrequencyData(dataArray);
+      } else {
+        dataArray.fill(0);
+        for (let i = 0; i < dataArray.length; i++) {
+          dataArray[i] = Math.random() * 30;
+        }
+      }
+
+      const barW = w / bars;
+      const step = Math.floor(dataArray.length / bars);
+
+      for (let i = 0; i < bars; i++) {
+        const idx = i * step;
+        const val = dataArray[idx] || 0;
+        const ph = (val / 255) * h * 0.5;
+        const x = i * barW;
+
+        const gradient = ctx.createLinearGradient(x, h, x, h - ph);
+        gradient.addColorStop(0, `rgba(124, 109, 219, ${0.15 + (val / 255) * 0.4})`);
+        gradient.addColorStop(0.5, `rgba(212, 165, 116, ${0.1 + (val / 255) * 0.3})`);
+        gradient.addColorStop(1, 'rgba(124, 109, 219, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, h - ph, barW - 1, ph);
+      }
+    }
+    draw();
+
+    // ── scroll reveal ──
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+    reveals.forEach(el => observer.observe(el));
+    // reveal what's already visible
+    setTimeout(() => {
+      reveals.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) el.classList.add('visible');
+      });
+    }, 100);
+  </script>
+</body>
+</html>
