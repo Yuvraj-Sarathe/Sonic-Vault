@@ -27,6 +27,7 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
@@ -42,3 +43,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local Flutter SDK copy (not part of project)
+/flutter/
+
+# Built release binaries
+/release/
+
+# Aged planning documents
+/PLAN.md
+/EXECUTION-READY.md
+/docs/
+/.planning/
