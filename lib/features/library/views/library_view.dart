@@ -13,7 +13,6 @@ import '../../../providers/audio_providers.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/song_tile.dart';
-import '../../../core/database/daos/song_dao.dart';
 import '../../../providers/database_providers.dart';
 
 /// Sort options for the library song list.

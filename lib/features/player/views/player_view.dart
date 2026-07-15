@@ -245,7 +245,7 @@ class _LyricsDisplay extends ConsumerWidget {
         height: 60,
         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (lyrics) {
         if (lyrics == null || lyrics.isEmpty) return const SizedBox.shrink();
 

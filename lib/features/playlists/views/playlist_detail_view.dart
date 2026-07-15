@@ -7,7 +7,6 @@ import '../../../core/audio/audio_service.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/utils/cover_art_helper.dart';
 import 'dart:io';
-import '../../../core/database/daos/playlist_dao.dart';
 import '../../../providers/playlist_providers.dart';
 import '../../../providers/audio_providers.dart';
 import '../../../providers/database_providers.dart';

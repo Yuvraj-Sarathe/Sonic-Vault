@@ -6,7 +6,6 @@ import '../../../core/database/app_database.dart';
 import '../../../providers/song_providers.dart';
 import '../../../providers/playlist_providers.dart';
 import '../../../providers/database_providers.dart';
-import '../../library/views/library_view.dart';
 
 /// Sort options matching the library view pattern.
 enum _PickerSort { title, artist, dateAdded, duration }
