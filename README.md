@@ -16,15 +16,113 @@ The ultimate offline music player — your music, your covers, your lyrics, your
 - **10-band equalizer** — built-in equalizer with presets.
 - **Volume normalization** — per-song volume leveling for consistent playback.
 - **Browse by genre / artist / album** — automatic organization of your library.
+- **🎲 Play Random** — shuffle button that plays a random song from your queue or entire library.
+- **⌨️ Keyboard shortcuts** — control playback without touching the mouse.
+
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| **Space** | Play / Pause |
+| **N** | Next track |
+| **P** | Previous track |
+| **→** | Skip forward 5 seconds |
+| **←** | Skip back 5 seconds |
+
+Shortcuts work globally — from any screen in the app.
 
 ## Platforms
 
 | Platform | Status | Download |
 |----------|--------|----------|
-| Windows  | ✅ Released | [Download ZIP](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases) |
-| Android  | ✅ Released | [Download APK](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases) |
-| Linux    | 🔧 CI builds | [Download tar.gz](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases) |
-| macOS    | 🔧 CI builds | [Download ZIP](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases) |
+| Windows  | ✅ Released | [Download ZIP](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
+| Android  | ✅ Released | [Download APK](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
+| Linux    | 🔧 CI builds | [Download tar.gz](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
+| macOS    | 🔧 CI builds | [Download ZIP](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
+
+## Download & Install
+
+Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases) page.
+
+### Windows
+
+**Option A — Portable (no install)**
+1. Download `SonicVault-windows-v*.zip`
+2. Extract the folder
+3. Run `sonicvault.exe`
+
+**Option B — Signed Installer (recommended)**
+1. Download `SonicVault-Setup-*.exe`
+2. Run it as **Administrator** (right-click → Run as administrator)
+3. The installer will trust the app certificate, add desktop shortcuts, and launch Sonic Vault
+4. Windows will show zero security warnings after the first install
+
+> ⚠️ The installer requires admin rights once to install the app certificate. After that, the app runs without admin privileges.
+
+### Android
+
+1. Download `SonicVault-android-v*.apk`
+2. On your phone, enable **Install from unknown sources** (Settings → Security → Install unknown apps)
+3. Open the APK file and tap Install
+
+### Linux
+
+1. Download `SonicVault-linux-v*.tar.gz`
+2. Extract: `tar -xzf SonicVault-linux-*.tar.gz`
+3. Run: `./sonicvault`
+
+### macOS
+
+1. Download `SonicVault-macos-v*.zip`
+2. Extract and open the `.app` bundle
+3. If macOS shows "unidentified developer", go to **Settings → Privacy & Security** and click **Open Anyway**
+
+## Building from Source
+
+### Prerequisites
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.44+
+- Dart SDK 3.12+
+- **Windows**: [Visual Studio 2022 Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) with "Desktop development with C++"
+- **Linux**: `clang`, `cmake`, `gtk3-dev`, `ninja-build`
+- **macOS**: Xcode 15+
+- **Android**: Android Studio (or just `flutter doctor --android-licenses`)
+
+### Setup
+```bash
+git clone https://github.com/Yuvraj-Sarathe/Sonic-Vault.git
+cd Sonic-Vault
+flutter pub get
+```
+
+### Run (debug)
+```bash
+flutter run -d windows       # Windows
+flutter run -d android       # Android (device connected)
+flutter run -d linux         # Linux
+flutter run -d macos         # macOS
+```
+
+### Build (release)
+```bash
+flutter build windows --release   # → build/windows/x64/runner/Release/sonicvault.exe
+flutter build apk --release       # → build/app/outputs/flutter-apk/app-release.apk
+flutter build linux --release     # → build/linux/x64/release/bundle/
+flutter build macos --release     # → build/macos/Build/Products/Release/
+```
+
+### Windows Installer (requires Inno Setup)
+
+After building the Windows release:
+
+```bash
+# Using Inno Setup Compiler GUI
+# Open installer/installer.iss → Build → Compile
+
+# Or command line:
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\installer.iss
+```
+
+This produces a signed `.exe` installer that handles certificate trust automatically.
 
 ## Project Structure
 
@@ -51,76 +149,15 @@ Sonic Vault/
 │   ├── providers/                # Riverpod state providers
 │   └── shared/widgets/           # Reusable widgets (EmptyState, SongTile, etc.)
 ├── android/                      # Android platform files
-│   ├── app/build.gradle.kts      # App-level Gradle config
-│   ├── build.gradle.kts          # Root Gradle config
-│   └── settings.gradle.kts       # Gradle settings
 ├── windows/                      # Windows desktop platform files
-│   ├── runner/                   # C++ runner (main.cpp, flutter_window, etc.)
-│   ├── flutter/                  # Flutter plugin registrations (generated)
-│   └── CMakeLists.txt            # Project-level CMake config
 ├── linux/                        # Linux desktop platform files
-│   ├── runner/                   # C++ runner (main.cc, my_application)
-│   ├── flutter/                  # Generated plugin registrations
-│   └── CMakeLists.txt
 ├── macos/                        # macOS platform files
-│   ├── Runner/                   # Swift runner (AppDelegate, MainFlutterWindow)
-│   └── Runner.xcodeproj/         # Xcode project
 ├── test/                         # Dart tests
-│   ├── core/audio/               # AudioService unit tests
-│   ├── core/database/daos/       # DAO tests with in-memory DB
-│   ├── core/utils/               # File format utility tests
-│   └── shared/widgets/           # Widget smoke tests
 ├── website/                      # Showcase website (Vercel-deployed)
-│   ├── index.html                # Single-page marketing site
-│   └── vercel.json               # Vercel deployment config
+├── cert/                         # Code signing certificates
+├── installer/                    # Inno Setup installer script
 ├── .github/workflows/            # CI/CD pipelines
-│   ├── sonic-vault-ci.yml        # CI: analyze + build on push/PR
-│   └── sonic-vault-release.yml   # Release: build + publish on tag
-├── pubspec.yaml                  # Dart/Flutter package manifest
-├── pubspec.lock                  # Locked dependency versions
-├── analysis_options.yaml         # Dart linter rules
-├── .gitignore                    # Git ignore rules
-├── build_env.ps1                 # PowerShell script to set VS 2022 build env
-├── build_windows.bat             # Debug Windows build helper
-└── build_windows_release.bat     # Release Windows build helper
-```
-
-## Download
-
-Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases) page.
-
-| Platform | File | Instructions |
-|----------|------|-------------|
-| Windows | `SonicVault-windows.zip` | Extract and run `sonicvault.exe` |
-| Android | `app-release.apk` | Enable "Install from unknown sources", open APK |
-| Linux | `SonicVault-linux.tar.gz` | Extract and run the binary |
-| macOS | `SonicVault-macos.zip` | Extract and open the `.app` bundle |
-
-## Building from Source
-
-### Prerequisites
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) 3.44+
-- Dart SDK 3.12+
-
-### Setup
-```bash
-git clone https://github.com/Yuvraj-Sarathe/Sonic-Vault.git
-cd Sonic-Vault
-flutter pub get
-```
-
-### Run (debug)
-```bash
-flutter run -d windows   # Windows
-flutter run -d android   # Android (device connected)
-```
-
-### Build (release)
-```bash
-flutter build windows --release   # Windows
-flutter build apk --release       # Android APK
-flutter build linux --release     # Linux
-flutter build macos --release     # macOS
+└── pubspec.yaml                  # Dart/Flutter package manifest
 ```
 
 ## Tech Stack
