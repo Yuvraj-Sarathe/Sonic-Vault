@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/audio/audio_service.dart';
@@ -11,6 +13,7 @@ import 'features/playlists/views/playlists_view.dart';
 import 'features/playlists/views/create_playlist_dialog.dart';
 import 'features/settings/views/settings_view.dart';
 import 'providers/audio_providers.dart';
+import 'providers/song_providers.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -94,7 +97,22 @@ class _ShellScreen extends ConsumerWidget {
       _ => 0,
     };
 
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.space):
+            () => ref.read(audioServiceProvider).togglePlayPause(),
+        const SingleActivator(LogicalKeyboardKey.keyN):
+            () => ref.read(audioServiceProvider).next(),
+        const SingleActivator(LogicalKeyboardKey.keyP):
+            () => ref.read(audioServiceProvider).previous(),
+        const SingleActivator(LogicalKeyboardKey.arrowRight):
+            () => ref.read(audioServiceProvider).seekRelative(const Duration(seconds: 5)),
+        const SingleActivator(LogicalKeyboardKey.arrowLeft):
+            () => ref.read(audioServiceProvider).seekRelative(const Duration(seconds: -5)),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
       body: Column(
         children: [
           Expanded(child: child),
@@ -143,6 +161,8 @@ class _ShellScreen extends ConsumerWidget {
               child: const Icon(Icons.add),
             )
           : null,
+        ),
+      ),
     );
   }
 }
@@ -155,6 +175,7 @@ class _MiniPlayerBar extends ConsumerWidget {
     final stateAsync = ref.watch(playerBarStateProvider);
     final state = stateAsync.asData?.value;
     final hasSong = state?.currentSong != null;
+    final songsAsync = ref.watch(allSongsProvider);
 
     return GestureDetector(
       onTap: hasSong ? () => context.go('/player') : null,
@@ -207,6 +228,28 @@ class _MiniPlayerBar extends ConsumerWidget {
                     ),
                   ],
                 ),
+              ),
+              // Play random from queue (always available)
+              IconButton(
+                icon: Icon(
+                  Icons.shuffle,
+                  size: 20,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                onPressed: () {
+                  final service = ref.read(audioServiceProvider);
+                  if (service.queue.isEmpty) {
+                    final songs = songsAsync.asData?.value;
+                    if (songs != null && songs.isNotEmpty) {
+                      final refs = songs.map((s) => s.toSongRef()).toList();
+                      final r = Random().nextInt(refs.length);
+                      service.setQueue(refs, startIndex: r);
+                    }
+                  } else {
+                    service.playRandom();
+                  }
+                },
+                tooltip: 'Play Random',
               ),
               IconButton(
                 icon: const Icon(Icons.skip_previous, size: 20),

@@ -121,6 +121,26 @@ class AudioService {
     _emitState();
   }
 
+  /// Play a random song from the current queue.
+  Future<void> playRandom() async {
+    if (_queue.isEmpty) return;
+    final randomIndex = DateTime.now().microsecondsSinceEpoch % _queue.length;
+    _currentIndex = randomIndex;
+    await _loadCurrent();
+    _emitState();
+  }
+
+  /// Seek forward or backward relative to current position.
+  Future<void> seekRelative(Duration offset) async {
+    final p = _player;
+    if (p == null) return;
+    final newPos = p.position + offset;
+    final clamped = Duration(
+      milliseconds: newPos.inMilliseconds.clamp(0, p.duration?.inMilliseconds ?? 0),
+    );
+    await p.seek(clamped);
+  }
+
   Future<void> next() async {
     if (_queue.isEmpty) return;
     final p = _player;
@@ -226,7 +246,11 @@ class AudioService {
     final p = _player;
     if (song == null || p == null) return;
     try {
+      // Stop any current playback first to ensure clean transition
+      await p.stop();
       await p.setFilePath(song.filePath);
+      // Wait briefly for the player to process the new source
+      await Future<void>.delayed(const Duration(milliseconds: 30));
       await p.play();
     } catch (e) {
       debugPrint('AudioService._loadCurrent: Failed to load "${song.filePath}": $e');

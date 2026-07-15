@@ -1,11 +1,14 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart' hide RepeatMode;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/utils/file_utils.dart';
 import '../../../core/utils/lrc_parser.dart';
 import '../../../providers/audio_providers.dart';
+import '../../../providers/song_providers.dart';
 
 class PlayerView extends ConsumerWidget {
   const PlayerView({super.key});
@@ -21,8 +24,24 @@ class PlayerView extends ConsumerWidget {
     final isPlaying = ref.watch(isPlayingProvider).asData?.value ?? false;
     final isShuffled = ref.watch(isShuffledProvider).asData?.value ?? false;
     final repeatMode = ref.watch(repeatModeProvider).asData?.value ?? RepeatMode.off;
+    final songsAsync = ref.watch(allSongsProvider);
 
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.space):
+            () => ref.read(audioServiceProvider).togglePlayPause(),
+        const SingleActivator(LogicalKeyboardKey.keyN):
+            () => ref.read(audioServiceProvider).next(),
+        const SingleActivator(LogicalKeyboardKey.keyP):
+            () => ref.read(audioServiceProvider).previous(),
+        const SingleActivator(LogicalKeyboardKey.arrowRight):
+            () => ref.read(audioServiceProvider).seekRelative(const Duration(seconds: 5)),
+        const SingleActivator(LogicalKeyboardKey.arrowLeft):
+            () => ref.read(audioServiceProvider).seekRelative(const Duration(seconds: -5)),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -121,8 +140,28 @@ class PlayerView extends ConsumerWidget {
                   onPressed: hasSong
                       ? () => ref.read(audioServiceProvider).toggleShuffle()
                       : null,
+                  tooltip: 'Shuffle Mode',
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.auto_awesome),
+                  iconSize: 24,
+                  onPressed: () {
+                    final service = ref.read(audioServiceProvider);
+                    if (service.queue.isEmpty) {
+                      final songs = songsAsync.asData?.value;
+                      if (songs != null && songs.isNotEmpty) {
+                        final refs = songs.map((s) => s.toSongRef()).toList();
+                        final r = Random().nextInt(refs.length);
+                        service.setQueue(refs, startIndex: r);
+                      }
+                    } else {
+                      service.playRandom();
+                    }
+                  },
+                  tooltip: 'Play Random',
+                ),
+                const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.skip_previous),
                   iconSize: 36,
@@ -171,6 +210,8 @@ class PlayerView extends ConsumerWidget {
               ],
             ),
           ],
+        ),
+      ),
         ),
       ),
     );
