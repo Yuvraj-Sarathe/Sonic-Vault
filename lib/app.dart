@@ -84,6 +84,21 @@ class _ShellScreen extends ConsumerWidget {
 
   const _ShellScreen({required this.child});
 
+  /// Returns true if an [EditableText] has focus, indicating a text input field.
+  static bool _isTextFieldFocused(BuildContext context) {
+    final focused = Focus.of(context).context?.widget;
+    if (focused is EditableText) return true;
+    // Walk up the focus tree to check ancestors
+    FocusNode? node = Focus.of(context);
+    while (node != null) {
+      if (node.context?.widget is EditableText) return true;
+      node = node.context != null
+          ? Focus.of(node.context!, skipTraversal: true)
+          : null;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
@@ -99,8 +114,11 @@ class _ShellScreen extends ConsumerWidget {
 
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.space):
-            () => ref.read(audioServiceProvider).togglePlayPause(),
+        const SingleActivator(LogicalKeyboardKey.space): () {
+          if (!_isTextFieldFocused(context)) {
+            ref.read(audioServiceProvider).togglePlayPause();
+          }
+        },
         const SingleActivator(LogicalKeyboardKey.keyN):
             () => ref.read(audioServiceProvider).next(),
         const SingleActivator(LogicalKeyboardKey.keyP):
