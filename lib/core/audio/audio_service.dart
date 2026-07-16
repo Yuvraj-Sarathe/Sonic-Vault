@@ -255,9 +255,19 @@ class AudioService {
       // Stop any current playback first to ensure clean transition
       await p.stop();
       await p.setFilePath(song.filePath);
-      // Wait briefly for the player to process the new source
-      await Future<void>.delayed(const Duration(milliseconds: 30));
-      await p.play();
+      // Retry play up to 3 times — justMediaPlayer may need a short initialization window
+      for (var attempt = 0; attempt < 3; attempt++) {
+        try {
+          await p.play();
+          return; // Success
+        } catch (_) {
+          if (attempt < 2) {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+          } else {
+            rethrow; // Let the outer catch handle final failure
+          }
+        }
+      }
     } catch (e) {
       debugPrint('AudioService._loadCurrent: Failed to load "${song.filePath}": $e');
     }
