@@ -1,3 +1,4 @@
+import 'dart:math' show Random;
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 
 /// Singleton audio player service wrapping just_audio.
 class AudioService {
+  static final _random = Random();
   final AudioPlayer? _player;
   final List<SongRef> _queue = [];
   int _currentIndex = -1;
@@ -124,7 +126,7 @@ class AudioService {
   /// Play a random song from the current queue.
   Future<void> playRandom() async {
     if (_queue.isEmpty) return;
-    final randomIndex = DateTime.now().microsecondsSinceEpoch % _queue.length;
+    final randomIndex = _random.nextInt(_queue.length);
     _currentIndex = randomIndex;
     await _loadCurrent();
     _emitState();
