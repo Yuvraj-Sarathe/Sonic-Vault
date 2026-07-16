@@ -111,3 +111,18 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# Bundle VC++ runtime DLLs so users don't need to install VC++ redistributable separately.
+# Windows will prefer DLLs in the app directory over system DLLs.
+file(GLOB VCREDIST_DLLS
+  "$ENV{windir}/System32/vcruntime140.dll"
+  "$ENV{windir}/System32/vcruntime140_1.dll"
+  "$ENV{windir}/System32/msvcp140.dll"
+  "$ENV{windir}/System32/msvcp140_1.dll"
+  "$ENV{windir}/System32/msvcp140_2.dll"
+)
+foreach(VCREDIST_DLL ${VCREDIST_DLLS})
+  if(EXISTS "${VCREDIST_DLL}")
+    install(FILES "${VCREDIST_DLL}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
+  endif()
+endforeach()
