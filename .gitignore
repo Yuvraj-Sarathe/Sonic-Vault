@@ -61,5 +61,7 @@ app.*.map.json
 /installer/*.zip
 /installer/*.msi
 
-# Certificates (optional - keep if you want to track cert history)
-# /cert/
+# Certificates — NEVER commit the .pfx private key
+/cert/*.pfx
+# The public .cer is safe to track
+# /cert/*.cer
