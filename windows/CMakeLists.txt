@@ -114,15 +114,20 @@ install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
 
 # Bundle VC++ runtime DLLs so users don't need to install VC++ redistributable separately.
 # Windows will prefer DLLs in the app directory over system DLLs.
-file(GLOB VCREDIST_DLLS
-  "$ENV{windir}/System32/vcruntime140.dll"
-  "$ENV{windir}/System32/vcruntime140_1.dll"
-  "$ENV{windir}/System32/msvcp140.dll"
-  "$ENV{windir}/System32/msvcp140_1.dll"
-  "$ENV{windir}/System32/msvcp140_2.dll"
+set(_WINDIR "C:/Windows")
+if(DEFINED ENV{windir})
+  set(_WINDIR "$ENV{windir}")
+endif()
+set(_SYS32 "${_WINDIR}/System32")
+set(_VCREDIST_DLLS
+  "${_SYS32}/vcruntime140.dll"
+  "${_SYS32}/vcruntime140_1.dll"
+  "${_SYS32}/msvcp140.dll"
+  "${_SYS32}/msvcp140_1.dll"
+  "${_SYS32}/msvcp140_2.dll"
 )
-foreach(VCREDIST_DLL ${VCREDIST_DLLS})
-  if(EXISTS "${VCREDIST_DLL}")
-    install(FILES "${VCREDIST_DLL}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
+foreach(_DLL ${_VCREDIST_DLLS})
+  if(EXISTS "${_DLL}")
+    install(FILES "${_DLL}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
   endif()
 endforeach()
