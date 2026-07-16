@@ -3,7 +3,7 @@
 ; certificate trust installation for zero-warning user experience.
 
 #define MyAppName "Sonic Vault"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.2.1"
 #define MyAppPublisher "Yuvraj Sarathe"
 #define MyAppURL "https://github.com/Yuvraj-Sarathe/Sonic-Vault"
 #define MyExeName "sonicvault.exe"
@@ -40,8 +40,12 @@ Source: "..\build\windows\x64\runner\Release\*.dll"; DestDir: "{app}"; Flags: ig
 Source: "..\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; The public certificate — extracted to temp, imported, then removed
 Source: "sonicvault.cer"; DestDir: "{tmp}"; Flags: deleteafterinstall
+; VC++ runtime redistributable — downloaded at install time if needed
+Source: "vcredist_x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall skipifsourcedoesntexist
 
 [Run]
+; Install VC++ runtime if not present
+Filename: "{tmp}\vcredist_x64.exe"; Parameters: "/install /quiet /norestart"; Flags: runhidden waituntilterminated skipifdoesntexist; StatusMsg: "Installing Visual C++ Runtime..."
 ; Install the certificate into the Local Machine Trusted Root store
 Filename: "certutil.exe"; Parameters: "-addstore ""Root"" ""{tmp}\sonicvault.cer"""; Flags: runhidden; StatusMsg: "Installing security certificate — this app will be trusted on this PC..."
 ; Launch the app after setup
@@ -60,7 +64,17 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyExeName}"; Tasks: deskt
 Type: files; Name: "{app}\data\*"
 
 [Code]
+function IsVCRedistInstalled: Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := Exec('powershell.exe', '-Command "Get-Package -Name ''Microsoft Visual C++ 2015-2022 Redistributable (x64)'' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Version"', '', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Result := (ResultCode = 0);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
 begin
   if CurStep = ssPostInstall then
   begin

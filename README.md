@@ -46,19 +46,21 @@ Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Soni
 
 ### Windows
 
-**Option A — Portable (no install, no admin)**
+> ⚠️ **VC++ Runtime required.** Sonic Vault requires the Microsoft Visual C++ 2015-2022 Runtime (x64). If you see a "Bad Image" error about `permission_handler_windows_plugin.dll`, download and install the runtime from [Microsoft](https://aka.ms/vs/17/release/vc_redist.x64.exe) first.
+
+**Option A — Signed Installer (recommended, installs VC++ runtime + cert automatically)**
+1. Download `SonicVault-Setup-*.exe` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
+2. Right-click the installer → **Run as administrator** (required once to install the certificate)
+3. The installer will install VC++ Runtime, trust the app certificate, create shortcuts, and launch Sonic Vault
+4. After first install, the app runs **without admin rights** and shows zero security warnings
+
+> ⚠️ The installer requires admin rights once to install the self-signed certificate into Windows Trusted Root. After that, the app runs normally without admin privileges.
+
+**Option B — Portable (no install, no admin)**
 1. Download `SonicVault-windows-v*.zip` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
 2. Extract the folder (right-click → Extract All)
 3. Run `sonicvault.exe`
 4. If Windows SmartScreen appears, click **More info** → **Run anyway**
-
-**Option B — Signed Installer (recommended, auto-trusts the app)**
-1. Download `SonicVault-Setup-*.exe` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
-2. Right-click the installer → **Run as administrator** (required once to install the certificate)
-3. Follow the setup wizard — it installs the app certificate, creates shortcuts, and launches Sonic Vault
-4. After first install, the app runs **without admin rights** and shows zero security warnings
-
-> ⚠️ The installer requires admin rights once to install the self-signed certificate into Windows Trusted Root. After that, the app runs normally without admin privileges.
 
 ### Android
 
