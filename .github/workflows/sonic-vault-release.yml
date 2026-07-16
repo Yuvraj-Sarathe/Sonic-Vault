@@ -16,6 +16,13 @@ jobs:
           channel: stable
       - run: flutter pub get
       - run: flutter build windows --release
+      - name: Bundle VC++ runtime DLLs
+        run: |
+          $dlls = @("vcruntime140.dll","vcruntime140_1.dll","msvcp140.dll","msvcp140_1.dll","msvcp140_2.dll")
+          foreach ($dll in $dlls) {
+            $src = "C:\Windows\System32\$dll"
+            if (Test-Path $src) { Copy-Item $src "build\windows\x64\runner\Release\" -Force }
+          }
       - name: Package Windows build
         run: |
           Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath SonicVault-windows.zip
