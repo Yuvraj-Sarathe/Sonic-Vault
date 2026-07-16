@@ -29,10 +29,8 @@ jobs:
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\installer.iss"
       - name: Sign installer
+        if: ${{ secrets.WINDOWS_CERT_PASSWORD != '' }}
         run: |
-          $pfx = ConvertTo-SecureString "${{ secrets.WINDOWS_CERT_PASSWORD }}" -AsPlainText -Force
-          Import-PfxCertificate -FilePath "cert\sonicvault.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx
-          $thumb = (Get-PfxCertificate -FilePath "cert\sonicvault.pfx").Thumbprint
           signtool sign /fd SHA256 /a /f "cert\sonicvault.pfx" /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" "installer\SonicVault-Setup-1.2.1.exe"
       - uses: actions/upload-artifact@v4
         with:
