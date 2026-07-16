@@ -137,9 +137,10 @@ class AudioService {
     final p = _player;
     if (p == null) return;
     final newPos = p.position + offset;
-    final clamped = Duration(
-      milliseconds: newPos.inMilliseconds.clamp(0, p.duration?.inMilliseconds ?? 0),
-    );
+    final durationMs = p.duration?.inMilliseconds;
+    final clamped = durationMs != null && durationMs > 0
+        ? Duration(milliseconds: newPos.inMilliseconds.clamp(0, durationMs))
+        : newPos; // Allow unconstrained seek when duration is unknown
     await p.seek(clamped);
   }
 
