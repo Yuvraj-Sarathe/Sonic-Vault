@@ -1,9 +1,15 @@
 ; Sonic Vault Installer
 ; Inno Setup script — compiles a signed installer with automatic
 ; certificate trust installation for zero-warning user experience.
+; Version is passed via /DAppVersion=1.2.2 from CI; falls back to this default.
+
+#ifndef AppVersion
+  #define MyAppVersion "1.2.2"
+#else
+  #define MyAppVersion AppVersion
+#endif
 
 #define MyAppName "Sonic Vault"
-#define MyAppVersion "1.2.1"
 #define MyAppPublisher "Yuvraj Sarathe"
 #define MyAppURL "https://github.com/Yuvraj-Sarathe/Sonic-Vault"
 #define MyExeName "sonicvault.exe"

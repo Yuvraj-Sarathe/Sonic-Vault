@@ -9,8 +9,14 @@ jobs:
   build-windows:
     name: Build Windows
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+      - id: version
+        run: |
+          $ver = (Select-String -Path "pubspec.yaml" -Pattern '^version:\s+(.+)').Matches[0].Groups[1].Value.Split('+')[0]
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -27,17 +33,17 @@ jobs:
         run: choco install innosetup -y
       - name: Build installer
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\installer.iss"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=${{ steps.version.outputs.version }}" "installer\installer.iss"
       - name: Sign installer
         if: ${{ secrets.WINDOWS_CERT_PASSWORD != '' }}
         run: |
-          signtool sign /fd SHA256 /a /f "cert\sonicvault.pfx" /p $env:WINDOWS_CERT_PASSWORD "installer\SonicVault-Setup-1.2.1.exe"
+          signtool sign /fd SHA256 /a /f "cert\sonicvault.pfx" /p $env:WINDOWS_CERT_PASSWORD "installer\SonicVault-Setup-${{ steps.version.outputs.version }}.exe"
         env:
           WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
       - uses: actions/upload-artifact@v4
         with:
           name: SonicVault-windows
-          path: installer/SonicVault-Setup-1.2.1.exe
+          path: installer/SonicVault-Setup-${{ steps.version.outputs.version }}.exe
 
   build-android:
     name: Build Android
@@ -106,7 +112,7 @@ jobs:
       - name: Create GitHub Release
         run: |
           gh release create "${{ github.ref_name }}" \
-            SonicVault-windows/SonicVault-Setup-1.2.1.exe \
+            SonicVault-windows/SonicVault-Setup-${{ needs.build-windows.outputs.version }}.exe \
             SonicVault-android/app-release.apk \
             SonicVault-linux/SonicVault-linux.tar.gz \
             SonicVault-macos/SonicVault-macos.zip \
