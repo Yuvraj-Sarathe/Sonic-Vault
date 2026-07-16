@@ -23,13 +23,21 @@ jobs:
             $src = "C:\Windows\System32\$dll"
             if (Test-Path $src) { Copy-Item $src "build\windows\x64\runner\Release\" -Force }
           }
-      - name: Package Windows build
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+      - name: Build installer
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath SonicVault-windows.zip
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\installer.iss"
+      - name: Sign installer
+        run: |
+          $pfx = ConvertTo-SecureString "${{ secrets.WINDOWS_CERT_PASSWORD }}" -AsPlainText -Force
+          Import-PfxCertificate -FilePath "cert\sonicvault.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx
+          $thumb = (Get-PfxCertificate -FilePath "cert\sonicvault.pfx").Thumbprint
+          signtool sign /fd SHA256 /a /f "cert\sonicvault.pfx" /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" "installer\SonicVault-Setup-1.2.1.exe"
       - uses: actions/upload-artifact@v4
         with:
           name: SonicVault-windows
-          path: SonicVault-windows.zip
+          path: installer/SonicVault-Setup-1.2.1.exe
 
   build-android:
     name: Build Android
@@ -98,7 +106,7 @@ jobs:
       - name: Create GitHub Release
         run: |
           gh release create "${{ github.ref_name }}" \
-            SonicVault-windows/SonicVault-windows.zip \
+            SonicVault-windows/SonicVault-Setup-1.2.1.exe \
             SonicVault-android/app-release.apk \
             SonicVault-linux/SonicVault-linux.tar.gz \
             SonicVault-macos/SonicVault-macos.zip \
