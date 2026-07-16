@@ -204,10 +204,13 @@ class AudioService {
     switch (_repeatMode) {
       case RepeatMode.off:
         _repeatMode = RepeatMode.all;
+        break;
       case RepeatMode.all:
         _repeatMode = RepeatMode.one;
+        break;
       case RepeatMode.one:
         _repeatMode = RepeatMode.off;
+        break;
     }
     _emitState();
     return _repeatMode;
