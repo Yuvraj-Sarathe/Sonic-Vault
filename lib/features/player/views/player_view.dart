@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart' hide RepeatMode;
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/audio/audio_service.dart';
@@ -26,22 +25,7 @@ class PlayerView extends ConsumerWidget {
     final repeatMode = ref.watch(repeatModeProvider).asData?.value ?? RepeatMode.off;
     final songsAsync = ref.watch(allSongsProvider);
 
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.space):
-            () => ref.read(audioServiceProvider).togglePlayPause(),
-        const SingleActivator(LogicalKeyboardKey.keyN):
-            () => ref.read(audioServiceProvider).next(),
-        const SingleActivator(LogicalKeyboardKey.keyP):
-            () => ref.read(audioServiceProvider).previous(),
-        const SingleActivator(LogicalKeyboardKey.arrowRight):
-            () => ref.read(audioServiceProvider).seekRelative(const Duration(seconds: 5)),
-        const SingleActivator(LogicalKeyboardKey.arrowLeft):
-            () => ref.read(audioServiceProvider).seekRelative(const Duration(seconds: -5)),
-      },
-      child: Focus(
-        autofocus: true,
-        child: Scaffold(
+    return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -210,8 +194,6 @@ class PlayerView extends ConsumerWidget {
               ],
             ),
           ],
-        ),
-      ),
         ),
       ),
     );
