@@ -86,15 +86,10 @@ class _ShellScreen extends ConsumerWidget {
 
   /// Returns true if an [EditableText] has focus, indicating a text input field.
   static bool _isTextFieldFocused(BuildContext context) {
-    final focused = Focus.of(context).context?.widget;
-    if (focused is EditableText) return true;
-    // Walk up the focus tree to check ancestors
     FocusNode? node = Focus.of(context);
     while (node != null) {
       if (node.context?.widget is EditableText) return true;
-      node = node.context != null
-          ? Focus.of(node.context!, skipTraversal: true)
-          : null;
+      node = node.parent;
     }
     return false;
   }
