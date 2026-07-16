@@ -46,36 +46,58 @@ Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Soni
 
 ### Windows
 
-**Option A — Portable (no install)**
-1. Download `SonicVault-windows-v*.zip`
-2. Extract the folder
+**Option A — Portable (no install, no admin)**
+1. Download `SonicVault-windows-v*.zip` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
+2. Extract the folder (right-click → Extract All)
 3. Run `sonicvault.exe`
+4. If Windows SmartScreen appears, click **More info** → **Run anyway**
 
-**Option B — Signed Installer (recommended)**
-1. Download `SonicVault-Setup-*.exe`
-2. Run it as **Administrator** (right-click → Run as administrator)
-3. The installer will trust the app certificate, add desktop shortcuts, and launch Sonic Vault
-4. Windows will show zero security warnings after the first install
+**Option B — Signed Installer (recommended, auto-trusts the app)**
+1. Download `SonicVault-Setup-*.exe` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
+2. Right-click the installer → **Run as administrator** (required once to install the certificate)
+3. Follow the setup wizard — it installs the app certificate, creates shortcuts, and launches Sonic Vault
+4. After first install, the app runs **without admin rights** and shows zero security warnings
 
-> ⚠️ The installer requires admin rights once to install the app certificate. After that, the app runs without admin privileges.
+> ⚠️ The installer requires admin rights once to install the self-signed certificate into Windows Trusted Root. After that, the app runs normally without admin privileges.
 
 ### Android
 
-1. Download `SonicVault-android-v*.apk`
-2. On your phone, enable **Install from unknown sources** (Settings → Security → Install unknown apps)
-3. Open the APK file and tap Install
+1. Download `SonicVault-android-v*.apk` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
+2. On your phone, enable **Install from unknown sources** (Settings → Security → Install unknown apps → select your file manager/browser)
+3. Open the APK file (via file manager or browser downloads) and tap **Install**
+4. If Google Play Protect warns, tap **Install anyway** (this is an open-source app, not on Play Store)
+
+> ✅ Minimum Android 8.0 (API 26). No special permissions beyond storage access for your music folder.
 
 ### Linux
 
-1. Download `SonicVault-linux-v*.tar.gz`
-2. Extract: `tar -xzf SonicVault-linux-*.tar.gz`
-3. Run: `./sonicvault`
+1. Download `SonicVault-linux-v*.tar.gz` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
+2. Extract:
+   ```bash
+   tar -xzf SonicVault-linux-*.tar.gz
+   ```
+3. Run:
+   ```bash
+   ./sonicvault
+   ```
+4. If it won't run, make it executable:
+   ```bash
+   chmod +x sonicvault
+   ./sonicvault
+   ```
+
+**Dependencies:** Requires GTK 3.24+ (standard on Ubuntu 20.04+, Fedora 35+, Arch, etc.). For AppImage/Flatpak, build from source.
 
 ### macOS
 
-1. Download `SonicVault-macos-v*.zip`
-2. Extract and open the `.app` bundle
-3. If macOS shows "unidentified developer", go to **Settings → Privacy & Security** and click **Open Anyway**
+1. Download `SonicVault-macos-v*.zip` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
+2. Extract and open the `Sonic Vault.app` bundle
+3. **If macOS blocks it** (unidentified developer):
+   - Go to **System Settings → Privacy & Security**
+   - Scroll down to "Security" → click **Open Anyway** next to the Sonic Vault entry
+   - Or run in Terminal: `xattr -d com.apple.quarantine /Applications/Sonic\ Vault.app`
+
+> 📱 Requires macOS 12+ (Monterey). Apple Silicon (M1/M2/M3) and Intel supported. No notarization — Gatekeeper will prompt once.
 
 ## Building from Source
 
