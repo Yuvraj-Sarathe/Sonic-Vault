@@ -30,7 +30,7 @@ class MainActivity : FlutterActivity() {
     private fun scanMusicFiles(): List<String> {
         val paths = mutableListOf<String>()
 
-        val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
         } else {
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
