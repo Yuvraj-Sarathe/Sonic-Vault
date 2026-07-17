@@ -40,8 +40,8 @@ class MainActivity : FlutterActivity() {
             MediaStore.Audio.Media.DATA
         )
 
-        // Only audio files that are actually present on disk
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC} = 1 AND ${MediaStore.Audio.Media.DATA} IS NOT NULL"
+        // Only audio files with a valid path or ID (rely on extension filter below)
+        val selection = "${MediaStore.Audio.Media.DATA} IS NOT NULL"
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
 
         var cursor: Cursor? = null
