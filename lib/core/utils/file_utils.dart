@@ -67,22 +67,13 @@ class FileUtils {
   static Future<List<File>> scanDirectory(String dirPath) async {
     final dir = Directory(dirPath);
     final audioFiles = <File>[];
-    if (!await dir.exists()) {
-      print('SonicVault: Directory does not exist: $dirPath');
-      return audioFiles;
-    }
+    if (!await dir.exists()) return audioFiles;
 
-    print('SonicVault: Scanning directory: $dirPath');
-    int fileCount = 0;
-    int audioCount = 0;
     await for (final entity in dir.list(recursive: true)) {
-      fileCount++;
       if (entity is File && isAudioFile(entity.path)) {
-        audioCount++;
         audioFiles.add(entity);
       }
     }
-    print('SonicVault: Found $fileCount total files, $audioCount audio files');
     return audioFiles;
   }
 

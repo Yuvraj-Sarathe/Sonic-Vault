@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,17 +47,16 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Future<void> _pickMusicFolder() async {
-    // Request appropriate storage permission based on Android version
+    // Request appropriate permission based on platform
     PermissionStatus status;
+
     if (await Permission.manageExternalStorage.isGranted) {
       status = PermissionStatus.granted;
     } else if (await Permission.manageExternalStorage.isLimited) {
       status = PermissionStatus.granted;
     } else {
-      // Request manage storage on Android 11+, audio permission on older
       status = await Permission.manageExternalStorage.request();
       if (!status.isGranted) {
-        // Fallback to audio permission for older Android
         status = await Permission.audio.request();
       }
     }
@@ -72,12 +73,21 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       return;
     }
 
-    final dirPath = await FilePicker.getDirectoryPath(
-      dialogTitle: 'Select Music Folder',
-    );
-    if (dirPath == null) return;
+    // On Android, we scan all music via MediaStore — no folder picker needed
+    // On other platforms, use the directory picker
+    String? dirPath;
 
-    setState(() => _musicFolderPath = dirPath);
+    if (Platform.isAndroid) {
+      dirPath = '/'; // placeholder — MediaScanner ignores this on Android
+      setState(() => _musicFolderPath = 'Device music library');
+    } else {
+      dirPath = await FilePicker.getDirectoryPath(
+        dialogTitle: 'Select Music Folder',
+      );
+      if (dirPath == null) return;
+      setState(() => _musicFolderPath = dirPath);
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('music_folder_path', dirPath);
     // Trigger a library scan for the new folder

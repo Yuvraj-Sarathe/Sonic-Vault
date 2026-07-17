@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/database/app_database.dart';
 import '../core/utils/file_utils.dart';
+import '../core/utils/media_scanner.dart';
 import '../core/utils/metadata_reader.dart';
 import 'database_providers.dart';
 import 'song_providers.dart';
@@ -53,8 +54,8 @@ class LibraryScanNotifier extends StateNotifier<LibraryScanState> {
     state = state.copyWith(isScanning: true, error: null);
 
     try {
-      // 1. Scan directory for audio files
-      final audioFiles = await FileUtils.scanDirectory(dirPath);
+      // 1. Scan directory for audio files (uses platform-specific API)
+      final audioFiles = await MediaScanner.scanAudioFiles(dirPath);
       final total = audioFiles.length;
 
       if (total == 0) {
