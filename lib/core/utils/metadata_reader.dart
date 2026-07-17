@@ -13,16 +13,19 @@ class MetadataReader {
     String filePath, {
     String? songId,
   }) async {
-    final file = File(filePath);
-    if (!await file.exists()) {
-      return {'error': 'File not found'};
-    }
-
-    final stat = await file.stat();
     final fileName = FileUtils.getFileName(filePath);
     final ext = FileUtils.getFileExtension(filePath);
 
     try {
+      final file = File(filePath);
+      final exists = await file.exists();
+      if (!exists) {
+        // File may not be accessible via dart:io on scoped storage (Android 11+).
+        // Return basic metadata rather than dropping the file from the scan.
+        return _basicMetadata(filePath, fileName, ext, 0);
+      }
+
+      final stat = await file.stat();
       final metadata = readMetadata(file);
 
       final title =
@@ -67,26 +70,35 @@ class MetadataReader {
         'coverArtPath': coverArtPath,
       };
     } catch (e) {
-      return {
-        'title': FileUtils.getFileNameWithoutExtension(filePath),
-        'artist': null,
-        'album': null,
-        'albumArtist': null,
-        'durationMs': 0,
-        'trackNumber': null,
-        'discNumber': null,
-        'year': null,
-        'genre': null,
-        'bitrate': null,
-        'sampleRate': null,
-        'hasCoverArt': false,
-        'filePath': filePath,
-        'fileName': fileName,
-        'fileSize': stat.size,
-        'fileFormat': ext.replaceAll('.', ''),
-        'coverArtPath': null,
-      };
+      // If dart:io operations fail (e.g. on scoped storage), return basic metadata
+      // so the file is still included in the library scan.
+      return _basicMetadata(filePath, fileName, ext, 0);
     }
+  }
+
+  /// Returns a minimal metadata map for files that could not be fully read.
+  /// This ensures scoped-storage files are not silently dropped from scans.
+  static Map<String, dynamic> _basicMetadata(
+      String filePath, String fileName, String ext, int fileSize) {
+    return {
+      'title': FileUtils.getFileNameWithoutExtension(filePath),
+      'artist': null,
+      'album': null,
+      'albumArtist': null,
+      'durationMs': 0,
+      'trackNumber': null,
+      'discNumber': null,
+      'year': null,
+      'genre': null,
+      'bitrate': null,
+      'sampleRate': null,
+      'hasCoverArt': false,
+      'filePath': filePath,
+      'fileName': fileName,
+      'fileSize': fileSize,
+      'fileFormat': ext.replaceAll('.', ''),
+      'coverArtPath': null,
+    };
   }
 
   static SongsCompanion metadataToSong(
