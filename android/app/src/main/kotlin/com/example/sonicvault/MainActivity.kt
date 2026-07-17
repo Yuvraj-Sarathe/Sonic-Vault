@@ -37,11 +37,14 @@ class MainActivity : FlutterActivity() {
 
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.DATA
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.DISPLAY_NAME
         )
 
-        // Only audio files with a valid path or ID (rely on extension filter below)
-        val selection = "${MediaStore.Audio.Media.DATA} IS NOT NULL"
+        // No SQL selection filter — rely on extension check in the loop.
+        // The DATA column is deprecated on API 29+, so we handle null
+        // by constructing content URIs from _ID.
+        val selection: String? = null
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
 
         var cursor: Cursor? = null
@@ -49,17 +52,30 @@ class MainActivity : FlutterActivity() {
             cursor = contentResolver.query(uri, projection, selection, null, sortOrder)
             cursor?.use { c ->
                 val dataIndex = c.getColumnIndex(MediaStore.Audio.Media.DATA)
+                val idIndex = c.getColumnIndex(MediaStore.Audio.Media._ID)
+                val nameIndex = c.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
                 while (c.moveToNext()) {
+                    // Use the file path if available; otherwise construct a content URI from _ID
                     val path = c.getString(dataIndex)
+                    val fileRef: String
+                    val checkName: String
                     if (path != null) {
-                        // Only add standard audio extensions to filter out ringtones, notifications, etc.
-                        val lower = path.lowercase()
-                        if (lower.endsWith(".mp3") || lower.endsWith(".flac") ||
-                            lower.endsWith(".wav") || lower.endsWith(".ogg") ||
-                            lower.endsWith(".aac") || lower.endsWith(".m4a") ||
-                            lower.endsWith(".opus") || lower.endsWith(".wma")) {
-                            paths.add(path)
-                        }
+                        fileRef = path
+                        checkName = path
+                    } else if (idIndex >= 0) {
+                        val id = c.getLong(idIndex)
+                        fileRef = ContentUris.withAppendedId(uri, id).toString()
+                        checkName = c.getString(nameIndex) ?: "unknown"
+                    } else {
+                        continue
+                    }
+                    // Only add standard audio extensions to filter out ringtones, notifications, etc.
+                    val lower = checkName.lowercase()
+                    if (lower.endsWith(".mp3") || lower.endsWith(".flac") ||
+                        lower.endsWith(".wav") || lower.endsWith(".ogg") ||
+                        lower.endsWith(".aac") || lower.endsWith(".m4a") ||
+                        lower.endsWith(".opus") || lower.endsWith(".wma")) {
+                        paths.add(fileRef)
                     }
                 }
             }
