@@ -255,7 +255,7 @@ class AudioService {
       // Stop any current playback first to ensure clean transition
       await p.stop();
       if (song.filePath.startsWith('content://')) {
-        await p.setUri(Uri.parse(song.filePath));
+        await p.setAudioSource(AudioSource.uri(Uri.parse(song.filePath)));
       } else {
         await p.setFilePath(song.filePath);
       }
