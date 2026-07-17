@@ -9,7 +9,6 @@ import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.sonicvault/scanner"
@@ -52,7 +51,7 @@ class MainActivity : FlutterActivity() {
                 val dataIndex = c.getColumnIndex(MediaStore.Audio.Media.DATA)
                 while (c.moveToNext()) {
                     val path = c.getString(dataIndex)
-                    if (path != null && File(path).exists()) {
+                    if (path != null) {
                         // Only add standard audio extensions to filter out ringtones, notifications, etc.
                         val lower = path.lowercase()
                         if (lower.endsWith(".mp3") || lower.endsWith(".flac") ||
