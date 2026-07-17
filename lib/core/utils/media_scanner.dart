@@ -40,6 +40,13 @@ class MediaScanner {
     } on MissingPluginException {
       // No platform implementation — return empty
       return [];
+    } on PlatformException catch (e) {
+      if (e.code == 'PERMISSION_DENIED') {
+        debugPrint('SonicVault: Permission denied for MediaStore scan');
+      } else {
+        debugPrint('SonicVault: MediaStore scan error [${e.code}]: ${e.message}');
+      }
+      return [];
     } catch (e) {
       debugPrint('SonicVault: MediaStore scan failed: $e');
       return [];

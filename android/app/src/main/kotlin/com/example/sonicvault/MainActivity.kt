@@ -18,8 +18,12 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
                 if (call.method == "scanMusic") {
-                    val paths = scanMusicFiles()
-                    result.success(paths)
+                    try {
+                        val paths = scanMusicFiles()
+                        result.success(paths)
+                    } catch (e: SecurityException) {
+                        result.error("PERMISSION_DENIED", "Storage permission not granted", null)
+                    }
                 } else {
                     result.notImplemented()
                 }
@@ -79,8 +83,10 @@ class MainActivity : FlutterActivity() {
                     }
                 }
             }
+        } catch (e: SecurityException) {
+            throw e  // Propagate to method channel handler for proper error reporting
         } catch (e: Exception) {
-            // Return whatever we have
+            // Return whatever we have for non-security errors
         }
 
         return paths
