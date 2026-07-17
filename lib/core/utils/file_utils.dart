@@ -33,14 +33,25 @@ class FileUtils {
     return sha256.convert(bytes).toString().substring(0, 16);
   }
 
+  /// Extract the last path segment (filename) from a file path or content URI.
+  static String getFileName(String path) {
+    if (path.startsWith('content://')) {
+      final decoded = Uri.decodeComponent(Uri.parse(path).pathSegments.last);
+      return decoded.split('/').last;
+    }
+    return path.split(RegExp(r'[/\\]')).last;
+  }
+
   static String getFileExtension(String path) {
+    if (path.startsWith('content://')) {
+      final name = getFileName(path);
+      final dotIndex = name.lastIndexOf('.');
+      if (dotIndex < 0 || dotIndex >= name.length - 1) return '';
+      return name.substring(dotIndex).toLowerCase();
+    }
     final dotIndex = path.lastIndexOf('.');
     if (dotIndex < 0 || dotIndex >= path.length - 1) return '';
     return path.substring(dotIndex).toLowerCase();
-  }
-
-  static String getFileName(String path) {
-    return path.split(RegExp(r'[/\\]')).last;
   }
 
   static String getFileNameWithoutExtension(String path) {

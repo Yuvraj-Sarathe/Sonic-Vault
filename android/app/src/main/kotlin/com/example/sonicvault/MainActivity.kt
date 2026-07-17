@@ -1,13 +1,19 @@
 package com.example.sonicvault
 
 import android.content.ContentUris
+import android.content.Context
+import android.content.Intent
 import android.database.Cursor
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
+import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.util.Base64
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
@@ -17,19 +23,216 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
-                if (call.method == "scanMusic") {
-                    try {
-                        val paths = scanMusicFiles()
-                        result.success(paths)
-                    } catch (e: SecurityException) {
-                        result.error("PERMISSION_DENIED", "Storage permission not granted", null)
+                try {
+                    when (call.method) {
+                        "scanMusic" -> {
+                            result.success(scanMusicFiles())
+                        }
+                        "takePersistableUriPermission" -> {
+                            takePersistableUriPermission(call)
+                            result.success(true)
+                        }
+                        "scanFolder" -> {
+                            val treeUri = call.argument<String>("treeUri")
+                            if (treeUri != null) {
+                                result.success(scanFolderWithSAF(treeUri))
+                            } else {
+                                result.error("INVALID_ARGUMENTS", "treeUri is required", null)
+                            }
+                        }
+                        "extractMetadata" -> {
+                            val uri = call.argument<String>("uri")
+                            val songId = call.argument<String>("songId")
+                            if (uri != null) {
+                                result.success(extractMetadataWithRetriever(uri, songId))
+                            } else {
+                                result.error("INVALID_ARGUMENTS", "uri is required", null)
+                            }
+                        }
+                        else -> result.notImplemented()
                     }
-                } else {
-                    result.notImplemented()
+                } catch (e: SecurityException) {
+                    result.error("PERMISSION_DENIED", e.message, null)
+                } catch (e: Exception) {
+                    result.error("ERROR", e.message, null)
                 }
             }
     }
 
+    // ──────────────────────────────────────────────
+    // Persistable URI permission (SAF tree picker)
+    // ──────────────────────────────────────────────
+    private fun takePersistableUriPermission(call: MethodCall) {
+        val uriString = call.argument<String>("uri") ?: return
+        val uri = Uri.parse(uriString)
+        try {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (_: Exception) {
+            // Permission may already be held or not available — not fatal
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // SAF DocumentFile tree walker (no androidx dependency)
+    // ──────────────────────────────────────────────
+    private fun scanFolderWithSAF(treeUriString: String): List<String> {
+        val treeUri = Uri.parse(treeUriString)
+        val audioFiles = mutableListOf<String>()
+        walkDocumentTree(this, treeUri, audioFiles)
+        return audioFiles
+    }
+
+    private fun walkDocumentTree(context: Context, treeUri: Uri, results: MutableList<String>) {
+        val docId: String = try {
+            DocumentsContract.getTreeDocumentId(treeUri)
+        } catch (_: Exception) {
+            DocumentsContract.getDocumentId(treeUri)
+        }
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
+
+        var cursor: Cursor? = null
+        try {
+            cursor = context.contentResolver.query(
+                childrenUri,
+                arrayOf(
+                    DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                    DocumentsContract.Document.COLUMN_MIME_TYPE,
+                    DocumentsContract.Document.COLUMN_DISPLAY_NAME
+                ),
+                null, null, null
+            )
+        } catch (_: SecurityException) {
+            return  // Skip directories we can't read
+        }
+
+        cursor?.use { c ->
+            val idIdx = c.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+            val mimeIdx = c.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE)
+            val nameIdx = c.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+            if (idIdx < 0) return
+
+            while (c.moveToNext()) {
+                val docId = c.getString(idIdx) ?: continue
+                val mimeType = c.getString(mimeIdx)
+                val name = c.getString(nameIdx) ?: continue
+                val lowerName = name.lowercase()
+
+                if (DocumentsContract.Document.MIME_TYPE_DIR == mimeType) {
+                    // Recurse into subdirectory
+                    val childUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
+                    walkDocumentTree(context, childUri, results)
+                } else if (mimeType?.startsWith("audio/") == true ||
+                    lowerName.endsWith(".mp3") || lowerName.endsWith(".flac") ||
+                    lowerName.endsWith(".wav") || lowerName.endsWith(".ogg") ||
+                    lowerName.endsWith(".aac") || lowerName.endsWith(".m4a") ||
+                    lowerName.endsWith(".opus") || lowerName.endsWith(".wma")
+                ) {
+                    val fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
+                    results.add(fileUri.toString())
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // Native metadata extraction via MediaMetadataRetriever
+    // ──────────────────────────────────────────────
+    private fun extractMetadataWithRetriever(
+        uriString: String,
+        songId: String?
+    ): Map<String, Any?> {
+        val uri = Uri.parse(uriString)
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(this, uri)
+
+            val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+            val artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+            val album = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+            val albumArtist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST)
+            val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+            val trackStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
+            val discStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DISC_NUMBER)
+            val yearStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR)
+            val genre = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE)
+            val bitrateStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+            val sampleRateStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)
+
+            val fileName = uri.lastPathSegment ?: "unknown"
+            val ext = if (fileName.contains(".")) {
+                fileName.substring(fileName.lastIndexOf(".")).replace(".", "")
+            } else ""
+
+            // Embedded cover art → base64 (Dart side saves via CoverArtHelper)
+            var coverArtBase64: String? = null
+            var hasCoverArt = false
+            try {
+                val pictureBytes = retriever.embeddedPicture
+                if (pictureBytes != null && pictureBytes.isNotEmpty()) {
+                    hasCoverArt = true
+                    if (songId != null) {
+                        coverArtBase64 = Base64.encodeToString(pictureBytes, Base64.NO_WRAP)
+                    }
+                }
+            } catch (_: Exception) {
+                // Some files may not support embedded picture extraction
+            }
+
+            return mapOf(
+                "title" to (title ?: fileName.substringBeforeLast(".")),
+                "artist" to artist,
+                "album" to album,
+                "albumArtist" to albumArtist,
+                "durationMs" to (durationStr?.toLongOrNull() ?: 0L),
+                "trackNumber" to trackStr?.toIntOrNull(),
+                "discNumber" to discStr?.toIntOrNull(),
+                "year" to yearStr?.toIntOrNull(),
+                "genre" to genre,
+                "bitrate" to bitrateStr?.toIntOrNull(),
+                "sampleRate" to sampleRateStr?.toIntOrNull(),
+                "hasCoverArt" to hasCoverArt,
+                "coverArtBase64" to coverArtBase64,
+                "filePath" to uriString,
+                "fileName" to fileName,
+                "fileFormat" to ext,
+            )
+        } catch (e: Exception) {
+            // Return basic info so the file isn't silently dropped
+            val fileName = uri.lastPathSegment ?: "unknown"
+            val ext = if (fileName.contains(".")) {
+                fileName.substring(fileName.lastIndexOf(".")).replace(".", "")
+            } else ""
+            return mapOf(
+                "title" to fileName.substringBeforeLast("."),
+                "artist" to null,
+                "album" to null,
+                "albumArtist" to null,
+                "durationMs" to 0L,
+                "trackNumber" to null,
+                "discNumber" to null,
+                "year" to null,
+                "genre" to null,
+                "bitrate" to null,
+                "sampleRate" to null,
+                "hasCoverArt" to false,
+                "coverArtBase64" to null,
+                "filePath" to uriString,
+                "fileName" to fileName,
+                "fileFormat" to ext,
+            )
+        } finally {
+            try {
+                retriever.release()
+            } catch (_: Exception) {}
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    // Legacy MediaStore scanner (retained as fallback)
+    // ──────────────────────────────────────────────
     private fun scanMusicFiles(): List<String> {
         val paths = mutableListOf<String>()
 
@@ -44,22 +247,16 @@ class MainActivity : FlutterActivity() {
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.DISPLAY_NAME
         )
-
-        // No SQL selection filter — rely on extension check in the loop.
-        // The DATA column is deprecated on API 29+, so we handle null
-        // by constructing content URIs from _ID.
-        val selection: String? = null
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
 
         var cursor: Cursor? = null
         try {
-            cursor = contentResolver.query(uri, projection, selection, null, sortOrder)
+            cursor = contentResolver.query(uri, projection, null, null, sortOrder)
             cursor?.use { c ->
                 val dataIndex = c.getColumnIndex(MediaStore.Audio.Media.DATA)
                 val idIndex = c.getColumnIndex(MediaStore.Audio.Media._ID)
                 val nameIndex = c.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
                 while (c.moveToNext()) {
-                    // Use the file path if available; otherwise construct a content URI from _ID
                     val path = c.getString(dataIndex)
                     val fileRef: String
                     val checkName: String
@@ -73,20 +270,20 @@ class MainActivity : FlutterActivity() {
                     } else {
                         continue
                     }
-                    // Only add standard audio extensions to filter out ringtones, notifications, etc.
                     val lower = checkName.lowercase()
                     if (lower.endsWith(".mp3") || lower.endsWith(".flac") ||
                         lower.endsWith(".wav") || lower.endsWith(".ogg") ||
                         lower.endsWith(".aac") || lower.endsWith(".m4a") ||
-                        lower.endsWith(".opus") || lower.endsWith(".wma")) {
+                        lower.endsWith(".opus") || lower.endsWith(".wma")
+                    ) {
                         paths.add(fileRef)
                     }
                 }
             }
-        } catch (e: SecurityException) {
-            throw e  // Propagate to method channel handler for proper error reporting
-        } catch (e: Exception) {
-            // Return whatever we have for non-security errors
+        } catch (_: SecurityException) {
+            throw SecurityException("Storage permission not granted")
+        } catch (_: Exception) {
+            // Non-security errors → return partial results
         }
 
         return paths

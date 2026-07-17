@@ -1,27 +1,52 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/services.dart';
 import '../../core/database/app_database.dart';
 import 'file_utils.dart';
 import 'cover_art_helper.dart';
 
 class MetadataReader {
-  /// Extract metadata from an audio file. If [songId] is provided and the file
-  /// has embedded cover art, it is saved to the app's covers directory and the
-  /// path is returned in `coverArtPath`.
+  static const _channel = MethodChannel('com.sonicvault/scanner');
+
+  /// Extract metadata from an audio file or content URI.
+  ///
+  /// For Android content:// URIs, delegates to Kotlin's
+  /// [MediaMetadataRetriever] via method channel — this avoids dart:io
+  /// restrictions on scoped storage.
+  ///
+  /// For regular file paths (desktop), uses [audio_metadata_reader].
+  ///
+  /// If [songId] is provided and the file has embedded cover art, it is saved
+  /// to the app's covers directory and the path is returned in `coverArtPath`.
   static Future<Map<String, dynamic>> extractMetadata(
     String filePath, {
     String? songId,
   }) async {
-    final fileName = FileUtils.getFileName(filePath);
-    final ext = FileUtils.getFileExtension(filePath);
+    final isContentUri = filePath.startsWith('content://');
 
+    final fileName = isContentUri
+        ? _getFileNameFromUri(filePath)
+        : FileUtils.getFileName(filePath);
+    final ext = isContentUri
+        ? _getExtensionFromUri(filePath)
+        : FileUtils.getFileExtension(filePath);
+
+    if (isContentUri) {
+      return _extractMetadataFromContentUri(
+        filePath,
+        fileName: fileName,
+        ext: ext,
+        songId: songId,
+      );
+    }
+
+    // Desktop / regular file path: use audio_metadata_reader
     try {
       final file = File(filePath);
       final exists = await file.exists();
       if (!exists) {
-        // File may not be accessible via dart:io on scoped storage (Android 11+).
-        // Return basic metadata rather than dropping the file from the scan.
         return _basicMetadata(filePath, fileName, ext, 0);
       }
 
@@ -43,11 +68,12 @@ class MetadataReader {
       final sampleRate = metadata.sampleRate;
       final hasCoverArt = metadata.pictures.isNotEmpty;
 
-      // Save embedded cover art to the app's covers directory if songId provided
+      // Save embedded cover art
       String? coverArtPath;
       if (hasCoverArt && songId != null) {
         final picture = metadata.pictures.first;
-        coverArtPath = await CoverArtHelper.saveCoverImage(songId, picture.bytes);
+        coverArtPath =
+            await CoverArtHelper.saveCoverImage(songId, picture.bytes);
       }
 
       return {
@@ -70,8 +96,63 @@ class MetadataReader {
         'coverArtPath': coverArtPath,
       };
     } catch (e) {
-      // If dart:io operations fail (e.g. on scoped storage), return basic metadata
-      // so the file is still included in the library scan.
+      return _basicMetadata(filePath, fileName, ext, 0);
+    }
+  }
+
+  /// Extract metadata from a content:// URI via Kotlin's MediaMetadataRetriever.
+  static Future<Map<String, dynamic>> _extractMetadataFromContentUri(
+    String filePath, {
+    required String fileName,
+    required String ext,
+    String? songId,
+  }) async {
+    try {
+      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+        'extractMetadata',
+        {'uri': filePath, 'songId': songId},
+      );
+
+      if (result == null) {
+        return _basicMetadata(filePath, fileName, ext, 0);
+      }
+
+      final map = Map<String, dynamic>.from(result);
+
+      // Handle base64 cover art bytes → save via CoverArtHelper
+      String? coverArtPath;
+      if (map['hasCoverArt'] == true && map['coverArtBase64'] != null) {
+        try {
+          final bytes = base64Decode(map['coverArtBase64'] as String);
+          if (songId != null) {
+            coverArtPath =
+                await CoverArtHelper.saveCoverImage(songId, bytes);
+          }
+        } catch (_) {
+          // Cover art decode/save failure is non-fatal
+        }
+      }
+
+      return {
+        'title': map['title'] as String? ?? fileName,
+        'artist': map['artist'] as String?,
+        'album': map['album'] as String?,
+        'albumArtist': map['albumArtist'] as String?,
+        'durationMs': (map['durationMs'] as num?)?.toInt() ?? 0,
+        'trackNumber': map['trackNumber'] as int?,
+        'discNumber': map['discNumber'] as int?,
+        'year': map['year'] as int?,
+        'genre': map['genre'] as String?,
+        'bitrate': map['bitrate'] as int?,
+        'sampleRate': map['sampleRate'] as int?,
+        'hasCoverArt': map['hasCoverArt'] == true,
+        'filePath': filePath,
+        'fileName': map['fileName'] as String? ?? fileName,
+        'fileSize': 0,
+        'fileFormat': map['fileFormat'] as String? ?? ext.replaceAll('.', ''),
+        'coverArtPath': coverArtPath,
+      };
+    } catch (e) {
       return _basicMetadata(filePath, fileName, ext, 0);
     }
   }
@@ -99,6 +180,19 @@ class MetadataReader {
       'fileFormat': ext.replaceAll('.', ''),
       'coverArtPath': null,
     };
+  }
+
+  /// Extract filename from a content:// URI last path segment.
+  static String _getFileNameFromUri(String uri) {
+    final decoded = Uri.decodeComponent(Uri.parse(uri).pathSegments.last);
+    return decoded.split('/').last;
+  }
+
+  /// Extract file extension from a content:// URI filename.
+  static String _getExtensionFromUri(String uri) {
+    final name = _getFileNameFromUri(uri);
+    final dot = name.lastIndexOf('.');
+    return dot > 0 ? name.substring(dot).toLowerCase() : '';
   }
 
   static SongsCompanion metadataToSong(

@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/theme/accent_colors.dart';
+import '../../../core/utils/media_scanner.dart';
 import '../../../providers/library_providers.dart';
 
 class SettingsView extends ConsumerStatefulWidget {
@@ -47,10 +48,10 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Future<void> _pickMusicFolder() async {
-    // On Android, MediaStore queries work without runtime permissions for
-    // discovering audio files — we skip the permission gate entirely.
-    // On other platforms (Windows, macOS, Linux), file I/O requires storage
-    // access which is typically granted by the OS without explicit prompt.
+    // On Android, we use the Storage Access Framework (SAF) via file_picker —
+    // the OS handles scoped storage automatically; no MANAGE_EXTERNAL_STORAGE
+    // or runtime storage permissions needed.
+    // On other platforms (Windows, macOS, Linux), request storage permission.
     if (!Platform.isAndroid) {
       PermissionStatus status = PermissionStatus.granted;
       if (await Permission.storage.isGranted) {
@@ -73,24 +74,20 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       }
     }
 
-    // On Android, we scan all music via MediaStore — no folder picker needed
-    // On other platforms, use the directory picker
-    String? dirPath;
+    String? dirPath = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Select Music Folder',
+    );
+    if (dirPath == null) return;
 
+    // On Android, persist the SAF tree URI permission so it survives restarts
     if (Platform.isAndroid) {
-      dirPath = '/'; // placeholder — MediaScanner ignores this on Android
-      setState(() => _musicFolderPath = 'Device music library');
-    } else {
-      dirPath = await FilePicker.getDirectoryPath(
-        dialogTitle: 'Select Music Folder',
-      );
-      if (dirPath == null) return;
-      setState(() => _musicFolderPath = dirPath);
+      await MediaScanner.persistFolderPermission(dirPath);
     }
 
+    setState(() => _musicFolderPath = dirPath);
+
     final prefs = await SharedPreferences.getInstance();
-    // Persist the display label so it survives app restart (IN-03)
-    await prefs.setString('music_folder_path', _musicFolderPath ?? dirPath);
+    await prefs.setString('music_folder_path', dirPath);
     // Trigger a library scan for the new folder
     if (mounted) {
       ref.read(libraryScanProvider.notifier).scanFolder(dirPath);

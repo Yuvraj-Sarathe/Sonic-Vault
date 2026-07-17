@@ -254,7 +254,11 @@ class AudioService {
     try {
       // Stop any current playback first to ensure clean transition
       await p.stop();
-      await p.setFilePath(song.filePath);
+      if (song.filePath.startsWith('content://')) {
+        await p.setUri(Uri.parse(song.filePath));
+      } else {
+        await p.setFilePath(song.filePath);
+      }
       // Retry play up to 3 times — justMediaPlayer may need a short initialization window
       for (var attempt = 0; attempt < 3; attempt++) {
         try {

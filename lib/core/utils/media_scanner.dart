@@ -5,46 +5,86 @@ import 'file_utils.dart';
 
 /// Scans for audio files using platform-specific APIs.
 ///
-/// On Android 11+, uses [MediaStore] API via a method channel because
-/// [Directory.list]() cannot access shared storage on modern Android.
+/// On Android 11+ with a user-picked SAF folder, uses [DocumentsContract]
+/// via a method channel to walk the selected tree. Falls back to [MediaStore]
+/// query when no SAF folder has been selected.
 /// On other platforms (Windows, macOS, Linux), falls back to [FileUtils.scanDirectory].
 class MediaScanner {
   static const _channel = MethodChannel('com.sonicvault/scanner');
 
-  /// Scan a directory (or the whole device) for audio files.
-  ///
-  /// On Android, ignores [dirPath] and uses [MediaStore] to find all
-  /// audio files on the device. On other platforms, scans [dirPath]
-  /// recursively using [FileUtils.scanDirectory].
-  static Future<List<File>> scanAudioFiles(String dirPath) async {
-    // Android: use MediaStore API via method channel
+  /// Persist the SAF tree URI permission so it survives app restarts.
+  static Future<void> persistFolderPermission(String treeUri) async {
     if (Platform.isAndroid) {
-      return _scanAndroid();
+      try {
+        await _channel.invokeMethod(
+          'takePersistableUriPermission',
+          {'uri': treeUri},
+        );
+      } catch (_) {
+        // Non-fatal — permission may already be held
+      }
+    }
+  }
+
+  /// Scan a directory (or SAF tree) for audio files.
+  ///
+  /// On Android, [dirPath] is a SAF tree URI (content://...) from the folder
+  /// picker. The method channel walks the document tree recursively.
+  /// On other platforms, scans [dirPath] recursively using [FileUtils.scanDirectory].
+  ///
+  /// Returns a list of file paths (desktop) or content URIs (Android SAF).
+  static Future<List<String>> scanAudioFiles(String dirPath) async {
+    // Android: use SAF tree walker via method channel
+    if (Platform.isAndroid) {
+      return _scanAndroid(dirPath);
     }
 
     // Other platforms: use dart:io file scanning
-    return FileUtils.scanDirectory(dirPath);
+    final files = await FileUtils.scanDirectory(dirPath);
+    return files.map((f) => f.path).toList();
   }
 
-  /// Android-specific scanner using the MediaStore content provider.
-  /// This is the only reliable way to access audio files on Android 11+.
-  static Future<List<File>> _scanAndroid() async {
+  /// Android-specific scanner.
+  ///
+  /// If [dirPath] is a SAF tree URI, uses [DocumentsContract] to walk the
+  /// user-picked folder tree. Otherwise falls back to the legacy [MediaStore]
+  /// device-wide query.
+  static Future<List<String>> _scanAndroid(String dirPath) async {
+    final isTreeUri = dirPath.startsWith('content://');
+
+    if (isTreeUri) {
+      try {
+        final paths = await _channel.invokeListMethod<String>(
+          'scanFolder',
+          {'treeUri': dirPath},
+        );
+        return paths ?? [];
+      } on MissingPluginException {
+        return [];
+      } on PlatformException catch (e) {
+        debugPrint('SonicVault: SAF tree scan error [${e.code}]: ${e.message}');
+        return [];
+      } catch (e) {
+        debugPrint('SonicVault: SAF tree scan failed: $e');
+        return [];
+      }
+    }
+
+    // Fallback to legacy MediaStore scan for backward compatibility
     try {
       final paths = await _channel.invokeListMethod<String>('scanMusic');
       if (paths == null || paths.isEmpty) return [];
 
-      return paths
-          .where((p) => p.isNotEmpty)
-          .map((p) => File(p))
-          .toList();
+      return paths.where((p) => p.isNotEmpty).toList();
     } on MissingPluginException {
-      // No platform implementation — return empty
       return [];
     } on PlatformException catch (e) {
       if (e.code == 'PERMISSION_DENIED') {
         debugPrint('SonicVault: Permission denied for MediaStore scan');
       } else {
-        debugPrint('SonicVault: MediaStore scan error [${e.code}]: ${e.message}');
+        debugPrint(
+          'SonicVault: MediaStore scan error [${e.code}]: ${e.message}',
+        );
       }
       return [];
     } catch (e) {

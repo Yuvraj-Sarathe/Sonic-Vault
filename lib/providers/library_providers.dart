@@ -54,7 +54,7 @@ class LibraryScanNotifier extends StateNotifier<LibraryScanState> {
     state = state.copyWith(isScanning: true, error: null);
 
     try {
-      // 1. Scan directory for audio files (uses platform-specific API)
+      // 1. Scan directory for audio files (returns file paths or content URIs)
       final audioFiles = await MediaScanner.scanAudioFiles(dirPath);
       final total = audioFiles.length;
 
@@ -71,11 +71,11 @@ class LibraryScanNotifier extends StateNotifier<LibraryScanState> {
       // 2-4. Extract metadata and build companions
       final companions = <SongsCompanion>[];
       for (int i = 0; i < audioFiles.length; i++) {
-        final file = audioFiles[i];
+        final path = audioFiles[i];
         try {
-          final id = FileUtils.generateFileId(file.path);
+          final id = FileUtils.generateFileId(path);
           final metadata = await MetadataReader.extractMetadata(
-            file.path,
+            path,
             songId: id,
           );
           companions.add(MetadataReader.metadataToSong(metadata, id));
