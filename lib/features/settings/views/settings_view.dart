@@ -45,8 +45,21 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Future<void> _pickMusicFolder() async {
-    // Request storage permission first
-    final status = await Permission.audio.request();
+    // Request appropriate storage permission based on Android version
+    PermissionStatus status;
+    if (await Permission.manageExternalStorage.isGranted) {
+      status = PermissionStatus.granted;
+    } else if (await Permission.manageExternalStorage.isLimited) {
+      status = PermissionStatus.granted;
+    } else {
+      // Request manage storage on Android 11+, audio permission on older
+      status = await Permission.manageExternalStorage.request();
+      if (!status.isGranted) {
+        // Fallback to audio permission for older Android
+        status = await Permission.audio.request();
+      }
+    }
+
     if (!status.isGranted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
