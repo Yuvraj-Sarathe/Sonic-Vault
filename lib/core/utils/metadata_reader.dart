@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/services.dart';
@@ -119,17 +119,19 @@ class MetadataReader {
 
       final map = Map<String, dynamic>.from(result);
 
-      // Handle base64 cover art bytes → save via CoverArtHelper
+      // Save cover art from raw bytes (MethodChannel delivers byte[] as Uint8List)
       String? coverArtPath;
-      if (map['hasCoverArt'] == true && map['coverArtBase64'] != null) {
+      if (map['hasCoverArt'] == true &&
+          map['coverBytes'] is Uint8List &&
+          (map['coverBytes'] as Uint8List).isNotEmpty) {
         try {
-          final bytes = base64Decode(map['coverArtBase64'] as String);
+          final bytes = map['coverBytes'] as Uint8List;
           if (songId != null) {
             coverArtPath =
                 await CoverArtHelper.saveCoverImage(songId, bytes);
           }
         } catch (_) {
-          // Cover art decode/save failure is non-fatal
+          // Cover art save failure is non-fatal
         }
       }
 

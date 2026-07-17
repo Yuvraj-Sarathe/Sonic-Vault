@@ -9,7 +9,6 @@ import android.net.Uri
 import android.os.Build
 import android.provider.DocumentsContract
 import android.provider.MediaStore
-import android.util.Base64
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -29,7 +28,8 @@ class MainActivity : FlutterActivity() {
                             result.success(scanMusicFiles())
                         }
                         "takePersistableUriPermission" -> {
-                            takePersistableUriPermission(call)
+                            val uriString = call.argument<String>("uri") ?: return@setMethodCallHandler
+                            takePersistableUriPermission(uriString)
                             result.success(true)
                         }
                         "scanFolder" -> {
@@ -62,8 +62,7 @@ class MainActivity : FlutterActivity() {
     // ──────────────────────────────────────────────
     // Persistable URI permission (SAF tree picker)
     // ──────────────────────────────────────────────
-    private fun takePersistableUriPermission(call: MethodCall) {
-        val uriString = call.argument<String>("uri") ?: return
+    private fun takePersistableUriPermission(uriString: String) {
         val uri = Uri.parse(uriString)
         try {
             contentResolver.takePersistableUriPermission(
@@ -121,7 +120,6 @@ class MainActivity : FlutterActivity() {
                 val lowerName = name.lowercase()
 
                 if (DocumentsContract.Document.MIME_TYPE_DIR == mimeType) {
-                    // Recurse into subdirectory
                     val childUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
                     walkDocumentTree(context, childUri, results)
                 } else if (mimeType?.startsWith("audio/") == true ||
@@ -139,6 +137,7 @@ class MainActivity : FlutterActivity() {
 
     // ──────────────────────────────────────────────
     // Native metadata extraction via MediaMetadataRetriever
+    // Uses openFileDescriptor for maximum content URI compatibility
     // ──────────────────────────────────────────────
     private fun extractMetadataWithRetriever(
         uriString: String,
@@ -147,7 +146,12 @@ class MainActivity : FlutterActivity() {
         val uri = Uri.parse(uriString)
         val retriever = MediaMetadataRetriever()
         try {
-            retriever.setDataSource(this, uri)
+            // Open a file descriptor directly from the content resolver.
+            // This is more reliable than setDataSource(Context, Uri) on
+            // certain Android versions and content provider implementations.
+            context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                retriever.setDataSource(pfd.fileDescriptor)
+            } ?: return fallbackMetadata(uri)
 
             val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
             val artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
@@ -162,23 +166,20 @@ class MainActivity : FlutterActivity() {
             val sampleRateStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)
 
             val fileName = uri.lastPathSegment ?: "unknown"
-            val ext = if (fileName.contains(".")) {
-                fileName.substring(fileName.lastIndexOf(".")).replace(".", "")
-            } else ""
+            val ext = fileName.substringAfterLast(".", "")
 
-            // Embedded cover art → base64 (Dart side saves via CoverArtHelper)
-            var coverArtBase64: String? = null
+            // Embedded cover art — return raw bytes natively.
+            // MethodChannel handles byte[] ↔ Uint8List automatically.
+            var coverBytes: ByteArray? = null
             var hasCoverArt = false
             try {
                 val pictureBytes = retriever.embeddedPicture
                 if (pictureBytes != null && pictureBytes.isNotEmpty()) {
                     hasCoverArt = true
-                    if (songId != null) {
-                        coverArtBase64 = Base64.encodeToString(pictureBytes, Base64.NO_WRAP)
-                    }
+                    coverBytes = pictureBytes
                 }
             } catch (_: Exception) {
-                // Some files may not support embedded picture extraction
+                // Some files don't support embedded picture extraction
             }
 
             return mapOf(
@@ -194,40 +195,41 @@ class MainActivity : FlutterActivity() {
                 "bitrate" to bitrateStr?.toIntOrNull(),
                 "sampleRate" to sampleRateStr?.toIntOrNull(),
                 "hasCoverArt" to hasCoverArt,
-                "coverArtBase64" to coverArtBase64,
+                "coverBytes" to coverBytes,  // raw ByteArray → Uint8List in Dart
                 "filePath" to uriString,
                 "fileName" to fileName,
                 "fileFormat" to ext,
             )
-        } catch (e: Exception) {
-            // Return basic info so the file isn't silently dropped
-            val fileName = uri.lastPathSegment ?: "unknown"
-            val ext = if (fileName.contains(".")) {
-                fileName.substring(fileName.lastIndexOf(".")).replace(".", "")
-            } else ""
-            return mapOf(
-                "title" to fileName.substringBeforeLast("."),
-                "artist" to null,
-                "album" to null,
-                "albumArtist" to null,
-                "durationMs" to 0L,
-                "trackNumber" to null,
-                "discNumber" to null,
-                "year" to null,
-                "genre" to null,
-                "bitrate" to null,
-                "sampleRate" to null,
-                "hasCoverArt" to false,
-                "coverArtBase64" to null,
-                "filePath" to uriString,
-                "fileName" to fileName,
-                "fileFormat" to ext,
-            )
+        } catch (_: Exception) {
+            return fallbackMetadata(uri)
         } finally {
             try {
                 retriever.release()
             } catch (_: Exception) {}
         }
+    }
+
+    private fun fallbackMetadata(uri: Uri): Map<String, Any?> {
+        val fileName = uri.lastPathSegment ?: "unknown"
+        val ext = fileName.substringAfterLast(".", "")
+        return mapOf(
+            "title" to fileName.substringBeforeLast("."),
+            "artist" to null,
+            "album" to null,
+            "albumArtist" to null,
+            "durationMs" to 0L,
+            "trackNumber" to null,
+            "discNumber" to null,
+            "year" to null,
+            "genre" to null,
+            "bitrate" to null,
+            "sampleRate" to null,
+            "hasCoverArt" to false,
+            "coverBytes" to null,
+            "filePath" to uri.toString(),
+            "fileName" to fileName,
+            "fileFormat" to ext,
+        )
     }
 
     // ──────────────────────────────────────────────
