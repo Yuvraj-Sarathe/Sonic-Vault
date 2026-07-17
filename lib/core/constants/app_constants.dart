@@ -5,7 +5,7 @@ class AppConstants {
       'Your music. Your covers. Your lyrics. Your rules.';
 
   static const List<String> supportedAudioFormats = [
-    '.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.opus',
+    '.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a', '.opus', '.wma',
   ];
 
   static const List<String> supportedImageFormats = [
