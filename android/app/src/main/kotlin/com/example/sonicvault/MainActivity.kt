@@ -80,15 +80,24 @@ class MainActivity : FlutterActivity() {
     private fun scanFolderWithSAF(treeUriString: String): List<String> {
         val treeUri = Uri.parse(treeUriString)
         val audioFiles = mutableListOf<String>()
-        walkDocumentTree(this, treeUri, audioFiles)
+        walkDocumentTree(this, treeUri, treeUri, audioFiles)
         return audioFiles
     }
 
-    private fun walkDocumentTree(context: Context, treeUri: Uri, results: MutableList<String>) {
+    private fun walkDocumentTree(
+        context: Context,
+        treeUri: Uri,
+        currentUri: Uri,
+        results: MutableList<String>
+    ) {
+        // treeUri is always the original SAF tree URI (required by
+        // buildChildDocumentsUriUsingTree / buildDocumentUriUsingTree).
+        // currentUri is the URI of the directory we're walking right now
+        // (used to extract its document ID via getDocumentId).
         val docId: String = try {
             DocumentsContract.getTreeDocumentId(treeUri)
         } catch (_: Exception) {
-            DocumentsContract.getDocumentId(treeUri)
+            DocumentsContract.getDocumentId(currentUri)
         }
         val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
 
@@ -121,7 +130,7 @@ class MainActivity : FlutterActivity() {
 
                 if (DocumentsContract.Document.MIME_TYPE_DIR == mimeType) {
                     val childUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
-                    walkDocumentTree(context, childUri, results)
+                    walkDocumentTree(context, treeUri, childUri, results)
                 } else if (mimeType?.startsWith("audio/") == true ||
                     lowerName.endsWith(".mp3") || lowerName.endsWith(".flac") ||
                     lowerName.endsWith(".wav") || lowerName.endsWith(".ogg") ||

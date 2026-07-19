@@ -11,7 +11,7 @@ class CoverArtHelper {
   /// Get or create the application's covers directory.
   static Future<Directory> getCoversDirectory() async {
     final appDir = await getApplicationDocumentsDirectory();
-    final coversDir = Directory('${appDir.path}\\$_coversDirName');
+    final coversDir = Directory('${appDir.path}/${_coversDirName}');
     if (!await coversDir.exists()) {
       await coversDir.create(recursive: true);
     }
@@ -24,7 +24,7 @@ class CoverArtHelper {
   /// Get the full path for a cover image by ID.
   static Future<String> getCoverPath(String id) async {
     final dir = await getCoversDirectory();
-    return '${dir.path}\\${getCoverFileName(id)}';
+    return '${dir.path}/${getCoverFileName(id)}';
   }
 
   /// Save image bytes to the covers directory keyed by [id].
