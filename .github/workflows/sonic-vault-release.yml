@@ -34,15 +34,12 @@ jobs:
       - name: Build installer
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=${{ steps.version.outputs.version }}" "installer\installer.iss"
+      - name: Sign portable exe
+        run: |
+          signtool sign /fd SHA256 /a /f "cert\sonicvault.pfx" "build\windows\x64\runner\Release\sonicvault.exe"
       - name: Sign installer
         run: |
-          if ($env:WINDOWS_CERT_PASSWORD) {
-            signtool sign /fd SHA256 /a /f "cert\sonicvault.pfx" /p $env:WINDOWS_CERT_PASSWORD "installer\SonicVault-Setup-${{ steps.version.outputs.version }}.exe"
-          } else {
-            Write-Host "No WINDOWS_CERT_PASSWORD — skipping signing"
-          }
-        env:
-          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+          signtool sign /fd SHA256 /a /f "cert\sonicvault.pfx" "installer\SonicVault-Setup-${{ steps.version.outputs.version }}.exe"
       - uses: actions/upload-artifact@v4
         with:
           name: SonicVault-windows
