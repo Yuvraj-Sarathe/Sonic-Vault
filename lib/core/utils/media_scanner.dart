@@ -12,6 +12,27 @@ import 'file_utils.dart';
 class MediaScanner {
   static const _channel = MethodChannel('com.sonicvault/scanner');
 
+  /// Pick a folder using the native SAF folder picker (Android).
+  ///
+  /// Returns the raw `content://` tree URI, or `null` if the user cancelled.
+  /// Unlike `file_picker.getDirectoryPath()`, this does NOT convert the URI
+  /// to a filesystem path — it returns the SAF content URI directly so the
+  /// tree walker can use it.
+  static Future<String?> pickFolder() async {
+    if (Platform.isAndroid) {
+      try {
+        final uri = await _channel.invokeMethod<String>('pickFolder');
+        return uri;
+      } on MissingPluginException {
+        return null;
+      } on PlatformException catch (e) {
+        debugPrint('SonicVault: pickFolder error [${e.code}]: ${e.message}');
+        return null;
+      }
+    }
+    return null;
+  }
+
   /// Persist the SAF tree URI permission so it survives app restarts.
   static Future<void> persistFolderPermission(String treeUri) async {
     if (Platform.isAndroid) {

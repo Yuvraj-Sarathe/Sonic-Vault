@@ -48,7 +48,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Future<void> _pickMusicFolder() async {
-    // On Android, we use the Storage Access Framework (SAF) via file_picker —
+    // On Android, we use the native SAF folder picker (content:// tree URI) —
     // the OS handles scoped storage automatically; no MANAGE_EXTERNAL_STORAGE
     // or runtime storage permissions needed.
     // On other platforms (Windows, macOS, Linux), request storage permission.
@@ -74,12 +74,21 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       }
     }
 
-    String? dirPath = await FilePicker.getDirectoryPath(
-      dialogTitle: 'Select Music Folder',
-    );
+    // On Android, use the native SAF picker which returns a raw content:// URI.
+    // FilePicker.getDirectoryPath converts SAF URIs to filesystem paths,
+    // which defeats the tree walker on Android 11+ scoped storage.
+    late final String? dirPath;
+    if (Platform.isAndroid) {
+      dirPath = await MediaScanner.pickFolder();
+    } else {
+      dirPath = await FilePicker.getDirectoryPath(
+        dialogTitle: 'Select Music Folder',
+      );
+    }
     if (dirPath == null) return;
 
     // On Android, persist the SAF tree URI permission so it survives restarts
+    // (native picker already persists it, but this is a safety net)
     if (Platform.isAndroid) {
       await MediaScanner.persistFolderPermission(dirPath);
     }
