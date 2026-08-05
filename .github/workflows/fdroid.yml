@@ -1,0 +1,111 @@
+name: Build F-Droid Repo
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-fdroid:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ──────────────────────────────────────────────
+      # Signing key — first run only
+      # ──────────────────────────────────────────────
+      # The F-Droid index (index-v1.jar) must be signed with a repo key.
+      # On the very first run there is no key yet, so generate one and
+      # upload it as an artifact. Download it, then store it as repo
+      # secrets:
+      #   gh secret set FDROID_KEYSTORE_B64 -b "$(cat keystore.p12.b64)"
+      #   gh secret set FDROID_KEYSTORE_PASS -b "$(cat keystore.pass)"
+      #   gh secret set FDROID_KEY_ALIAS -b fdroid
+      #   gh secret set FDROID_KEY_PASS -b "$(cat keystore.pass)"
+      # Subsequent runs skip this step and decode the key from the secrets.
+      - name: Generate F-Droid signing key (first run only)
+        if: ${{ secrets.FDROID_KEYSTORE_B64 == '' }}
+        run: |
+          set -e
+          PASS=$(openssl rand -hex 24)
+          printf '%s' "$PASS" > keystore.pass
+          keytool -genkeypair -v -keystore keystore.p12 -storetype PKCS12 \
+            -alias fdroid -keyalg RSA -keysize 4096 -validity 10000 \
+            -storepass "$PASS" -keypass "$PASS" \
+            -dname "CN=SonicVault F-Droid Repo, OU=Open Source, O=SonicVault, L=Internet, ST=Internet, C=US"
+          base64 -w0 keystore.p12 > keystore.p12.b64
+
+      - name: Upload signing key artifact (save it, then add as secret)
+        if: ${{ secrets.FDROID_KEYSTORE_B64 == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fdroid-keystore
+          path: |
+            keystore.p12.b64
+            keystore.pass
+          retention-days: 7
+
+      # ──────────────────────────────────────────────
+      # Build the F-Droid repo
+      # ──────────────────────────────────────────────
+      - name: Decode signing key
+        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        run: |
+          echo "${{ secrets.FDROID_KEYSTORE_B64 }}" | base64 -d > keystore.p12
+
+      - name: Download latest release APK
+        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        run: |
+          mkdir -p repo
+          gh release download --pattern 'app-release.apk' --dir repo
+
+      - name: Write fdroidserver config
+        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          KEYSTORE_PASS: ${{ secrets.FDROID_KEYSTORE_PASS }}
+          KEY_PASS: ${{ secrets.FDROID_KEY_PASS }}
+          KEY_ALIAS: ${{ secrets.FDROID_KEY_ALIAS }}
+        run: |
+          cat > config.yml <<EOF
+          repo_url: https://${REPO_OWNER}.github.io/${REPO_NAME}/repo
+          repo_name: "SonicVault F-Droid Repository"
+          keystore: keystore.p12
+          keystorepass: "${KEYSTORE_PASS}"
+          keyalias: "${KEY_ALIAS}"
+          keypass: "${KEY_PASS}"
+          EOF
+
+      - name: Generate F-Droid repo index (fdroidserver)
+        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        run: |
+          # Official fdroidserver image; entrypoint is `fdroid`.
+          # `fdroid update` reads metadata/, verifies the APK in repo/ and
+          # writes index.xml, index-v1.jar (signed) and index-v2.json.
+          docker run --rm -v "$PWD":/repo -w /repo \
+            registry.gitlab.com/fdroid/fdroidserver:latest update
+
+      # ──────────────────────────────────────────────
+      # Deploy to GitHub Pages
+      # ──────────────────────────────────────────────
+      - name: Upload Pages artifact
+        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: repo
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        uses: actions/deploy-pages@v4

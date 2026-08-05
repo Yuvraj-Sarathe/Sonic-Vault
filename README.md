@@ -71,6 +71,11 @@ Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Soni
 
 [![Get it on Obtainium](https://img.shields.io/badge/Get%20it%20on-Obtainium-107C41?style=for-the-badge&logo=android&logoColor=white)](https://app.obtainium.imranr.dev/add?r=https://github.com/Yuvraj-Sarathe/Sonic-Vault)
 
+**Prefer F-Droid?** Sonic Vault also runs a self-hosted F-Droid repository — add it once in any F-Droid client (F-Droid, Droidify, Neo Store) and updates arrive automatically:
+
+- Repository URL: `https://yuvraj-sarathe.github.io/Sonic-Vault/repo`
+- In F-Droid: **Settings → Repositories → Add repository** → paste the URL
+
 1. Download `SonicVault-android-v*.apk` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
 2. On your phone, enable **Install from unknown sources** (Settings → Security → Install unknown apps → select your file manager/browser)
 3. Open the APK file (via file manager or browser downloads) and tap **Install**
