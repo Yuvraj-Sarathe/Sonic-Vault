@@ -72,7 +72,12 @@ jobs:
         if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         run: |
           mkdir -p repo
-          gh release download --pattern 'app-release.apk' --dir repo
+          # Public repo — release assets need no authentication.
+          URL=$(curl -s "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" \
+            | jq -r '.assets[] | select(.name | endswith(".apk")) | .browser_download_url' \
+            | head -1)
+          test -n "$URL"
+          curl -sL "$URL" -o repo/app-release.apk
 
       - name: Write fdroidserver config
         if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
