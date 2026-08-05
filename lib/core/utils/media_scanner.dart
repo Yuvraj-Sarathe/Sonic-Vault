@@ -69,8 +69,10 @@ class MediaScanner {
   /// Android-specific scanner.
   ///
   /// If [dirPath] is a SAF tree URI, uses [DocumentsContract] to walk the
-  /// user-picked folder tree. Otherwise falls back to the legacy [MediaStore]
-  /// device-wide query.
+  /// user-picked folder tree. If the tree walk comes back empty (no files,
+  /// a provider hiccup, or a missing grant), automatically falls back to
+  /// the device-wide [MediaStore] audio query so the library never ends up
+  /// empty without a reason being shown.
   static Future<List<String>> _scanAndroid(String dirPath) async {
     final isTreeUri = dirPath.startsWith('content://');
 
@@ -80,30 +82,33 @@ class MediaScanner {
           'scanFolder',
           {'treeUri': dirPath},
         );
-        return paths ?? [];
+        if (paths != null && paths.isNotEmpty) return paths;
+        debugPrint(
+          'SonicVault: SAF tree scan found no files — '
+          'falling back to MediaStore',
+        );
       } on MissingPluginException {
-        return [];
+        // No native side — fall through to MediaStore
       } on PlatformException catch (e) {
         debugPrint('SonicVault: SAF tree scan error [${e.code}]: ${e.message}');
-        return [];
       } catch (e) {
         debugPrint('SonicVault: SAF tree scan failed: $e');
-        return [];
       }
     }
 
-    // Fallback to legacy MediaStore scan for backward compatibility.
-    // MediaStore requires a runtime permission (READ_MEDIA_AUDIO on
-    // Android 13+, READ_EXTERNAL_STORAGE below — permission_handler maps
-    // Permission.audio to the right one), which is never granted by
-    // default, so request it before querying.
+    // Fallback to MediaStore scan. It requires a runtime permission
+    // (READ_MEDIA_AUDIO on Android 13+, READ_EXTERNAL_STORAGE below —
+    // permission_handler maps Permission.audio to the right one), which is
+    // never granted by default, so request it before querying.
     final permission = await Permission.audio.request();
     if (!permission.isGranted) {
-      debugPrint(
-        'SonicVault: MediaStore scan skipped — media permission denied '
-        '(${permission.name})',
+      // Throw so the UI can show why the scan failed instead of silently
+      // reporting "No audio files found".
+      throw PlatformException(
+        code: 'PERMISSION_DENIED',
+        message: 'Media access permission denied (${permission.name}). '
+            'The selected folder could not be scanned.',
       );
-      return [];
     }
 
     try {

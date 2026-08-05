@@ -351,7 +351,15 @@ class LibraryView extends ConsumerWidget {
 
   Future<void> _pickAndScanFolder(BuildContext context, WidgetRef ref) async {
     try {
-      final dirPath = await MediaScanner.pickFolder();
+      // Android: native SAF picker returning a raw content:// tree URI
+      // (file_picker's getDirectoryPath converts it to a filesystem path
+      // that dart:io cannot read under scoped storage).
+      // Desktop: file_picker, which returns a real directory path.
+      final dirPath = Platform.isAndroid
+          ? await MediaScanner.pickFolder()
+          : await FilePicker.getDirectoryPath(
+              dialogTitle: 'Select Music Folder',
+            );
       if (dirPath == null) return; // User cancelled
 
       await ref.read(libraryScanProvider.notifier).scanFolder(dirPath);

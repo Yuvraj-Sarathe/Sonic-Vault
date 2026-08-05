@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/database/app_database.dart';
 import '../core/utils/file_utils.dart';
@@ -112,9 +113,14 @@ class LibraryScanNotifier extends StateNotifier<LibraryScanState> {
 
       state = state.copyWith(isScanning: false);
     } on Exception catch (e) {
+      // Surface the real reason (e.g. permission denied) instead of a
+      // generic failure message.
+      final message = e is PlatformException && e.message != null
+          ? e.message!
+          : e.toString();
       state = state.copyWith(
         isScanning: false,
-        error: 'Scan failed: ${e.toString()}',
+        error: 'Scan failed: $message',
       );
     }
   }
