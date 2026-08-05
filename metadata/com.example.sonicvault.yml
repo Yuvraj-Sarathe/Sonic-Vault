@@ -11,6 +11,6 @@ Description: |
   SonicVault is an offline-first music player. It plays music from your
   local storage - no streaming, no subscriptions.
 
-  Features include custom cover art, playlists with M3U export,
-  synchronized lyrics (LRC), a 10-band equalizer, volume normalization,
-  and browse-by-genre/artist/album views.
+  Features include custom cover art, playlists, synchronized lyrics (LRC),
+  and browse-by-genre/artist/album views. A 10-band equalizer and M3U
+  playlist export are on the workbench.
