@@ -123,13 +123,14 @@ jobs:
       # upload-pages-artifact flattens the given path, so stage the repo
       # files under site/repo/ to keep the documented repo URL
       # https://<owner>.github.io/<repo>/repo; the showcase website from
-      # website/ is served at the site root.
+      # website/ (index.html + favicons) is served at the site root.
       - name: Stage Pages site
         if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         run: |
           mkdir site
           mv repo site/repo
-          cp website/index.html site/index.html
+          cp -r website/. site/
+          rm -f site/vercel.json
 
       - name: Upload Pages artifact
         if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
