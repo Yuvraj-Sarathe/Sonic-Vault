@@ -33,16 +33,21 @@ Shortcuts work globally — from any screen in the app.
 
 ## Platforms
 
-| Platform | Status | Download |
-|----------|--------|----------|
-| Windows  | ✅ Released | [Download ZIP](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
+| Platform | Status | Get it |
+|----------|--------|--------|
+| Windows  | ✅ Released | [Download](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
 | Android  | ✅ Released | [Download APK](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
-| Linux    | 🔧 CI builds | [Download tar.gz](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
-| macOS    | 🔧 CI builds | [Download ZIP](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
+| Linux    | ✅ Working — needs testers | [Build from source](#building-from-source) |
+| macOS    | ✅ Working — needs testers | [Build from source](#building-from-source) |
+| iOS      | 🛠️ Being worked on — testers wanted | [Build from source](#building-from-source) |
+
+> 🧪 **Testers wanted!** We're actively working on **macOS, iOS & Linux** — they build and run, but real-world testing is what turns "it builds" into "it works". If you're on one of those platforms, give it a try and **feel free to open an issue** for anything you hit (or anything you love): [Open an issue](https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues/new).
+>
+> ⚠️ GitHub Releases currently publish **Windows & Android** binaries only — once macOS, iOS & Linux get enough tester feedback, they'll get official releases too.
 
 ## Download & Install
 
-Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases) page.
+Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases) page (Windows & Android). For macOS, iOS & Linux, see [Building from Source](#building-from-source) below.
 
 ### Windows
 
@@ -68,30 +73,28 @@ Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Soni
 4. If Google Play Protect warns, tap **Install anyway** (this is an open-source app, not on Play Store)
 
 > ✅ Minimum Android 8.0 (API 26). No special permissions beyond storage access for your music folder.
+>
+> ⚠️ **Redmi / Xiaomi (MIUI / HyperOS) users:** sorry — just give up. Xiaomi's aggressive permission management blocks the folder & media access Sonic Vault needs, so on Redmi the app just can't get its features to work. On **Samsung and most other devices it works fine** — and if you're on one of those and something's off, open an issue and we'll fix it.
 
 ### Linux
 
-1. Download `SonicVault-linux-v*.tar.gz` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
-2. Extract:
+1. Linux binaries aren't published to Releases yet — build from source (see [Building from Source](#building-from-source)); the bundle lands in `build/linux/x64/release/bundle/`
+2. Run the app:
    ```bash
-   tar -xzf SonicVault-linux-*.tar.gz
+   ./build/linux/x64/release/bundle/sonicvault
    ```
-3. Run:
+3. If it won't run, make it executable:
    ```bash
-   ./sonicvault
-   ```
-4. If it won't run, make it executable:
-   ```bash
-   chmod +x sonicvault
-   ./sonicvault
+   chmod +x build/linux/x64/release/bundle/sonicvault
+   ./build/linux/x64/release/bundle/sonicvault
    ```
 
 **Dependencies:** Requires GTK 3.24+ (standard on Ubuntu 20.04+, Fedora 35+, Arch, etc.). For AppImage/Flatpak, build from source.
 
 ### macOS
 
-1. Download `SonicVault-macos-v*.zip` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
-2. Extract and open the `Sonic Vault.app` bundle
+1. macOS builds aren't published to Releases yet — build from source (see [Building from Source](#building-from-source)); the app lands in `build/macos/Build/Products/Release/`
+2. Open the `Sonic Vault.app` bundle: `open build/macos/Build/Products/Release/Sonic\ Vault.app`
 3. **If macOS blocks it** (unidentified developer):
    - Go to **System Settings → Privacy & Security**
    - Scroll down to "Security" → click **Open Anyway** next to the Sonic Vault entry
@@ -200,7 +203,7 @@ Sonic Vault/
 This project uses GitHub Actions for continuous integration and delivery:
 
 - **CI Workflow** — runs on every push/PR to `main`: analyze → build Windows → build Linux → build Android → build macOS
-- **Release Workflow** — runs on tag push (`v*`): builds all platforms → packages artifacts → creates a GitHub Release
+- **Release Workflow** — runs on tag push (`v*`): builds Windows & Android → packages artifacts → creates a GitHub Release
 
 ## Website
 
