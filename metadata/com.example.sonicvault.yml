@@ -2,9 +2,9 @@ Categories:
   - Multimedia
 License: MIT
 WebSite: https://sonicvault.vercel.app
-Source Code: https://github.com/Yuvraj-Sarathe/Sonic-Vault
-Issue Tracker: https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues
-Auto Name: SonicVault
+SourceCode: https://github.com/Yuvraj-Sarathe/Sonic-Vault
+IssueTracker: https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues
+AutoName: SonicVault
 Summary: Offline music player with covers, lyrics, and playlists
 Description: |
   SonicVault is an offline-first music player. It plays music from your
