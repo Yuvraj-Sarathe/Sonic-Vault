@@ -14,7 +14,7 @@ Sonic Vault is a free, open-source, **offline-first** music player for Windows, 
 [![Get it on F-Droid](https://img.shields.io/badge/Get%20it%20on-F--Droid-1976D2?style=for-the-badge&logo=fdroid&logoColor=white)](https://yuvraj-sarathe.github.io/Sonic-Vault/repo)
 
 > 🚨 **TESTERS NEEDED ASAP — Linux, macOS & iOS!**
-> The Linux and macOS builds work and pass CI, but real-world testing is what turns "it builds" into "it works" — and iOS is still being actively worked on. If you're on one of those platforms, grab a build, break things, and tell us about it. Every issue you open makes the next release better for everyone: [Open an issue](https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues/new) or check the [platform status table](#platforms) below.
+> The Linux and macOS builds work and pass CI, but real-world testing is what turns "it builds" into "it works" — and iOS is still being actively worked on. If you're on one of those platforms, grab a build, break things, and tell us about it. See the dedicated testers-wanted issues for a checklist: [Linux](https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues/1) · [macOS](https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues/2) · [iOS](https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues/3). Or check the [platform status table](#platforms) below.
 >
 > ⚠️ The self-hosted F-Droid repository (`/repo`) serves Android builds only. Sonic Vault is **not** on the official F-Droid.org store — the badge above points to our own repository.
 
@@ -118,7 +118,7 @@ Sonic Vault runs its own F-Droid repository, hosted on GitHub Pages and rebuilt 
 
 ### Linux
 
-1. Linux binaries aren't published to Releases yet — build from source (see [Building from Source](#building-from-source)); the bundle lands in `build/linux/x64/release/bundle/`
+1. Linux binaries aren't published in current Releases — build from source (see [Building from Source](#building-from-source)); the bundle lands in `build/linux/x64/release/bundle/`
 2. Run the app:
    ```bash
    ./build/linux/x64/release/bundle/sonicvault
@@ -133,12 +133,12 @@ Sonic Vault runs its own F-Droid repository, hosted on GitHub Pages and rebuilt 
 
 ### macOS
 
-1. macOS builds aren't published to Releases yet — build from source (see [Building from Source](#building-from-source)); the app lands in `build/macos/Build/Products/Release/`
+1. macOS builds aren't published in current Releases — build from source (see [Building from Source](#building-from-source)); the app lands in `build/macos/Build/Products/Release/`
 2. Open the `Runner.app` bundle: `open build/macos/Build/Products/Release/Runner.app`
 3. **If macOS blocks it** (unidentified developer):
    - Go to **System Settings → Privacy & Security**
    - Scroll down to "Security" → click **Open Anyway** next to the Sonic Vault entry
-   - Or run in Terminal: `xattr -d com.apple.quarantine /Applications/Runner.app`
+   - Or run in Terminal: `xattr -d com.apple.quarantine build/macos/Build/Products/Release/Runner.app`
 
 > 📱 Requires macOS 10.15+ (Catalina). CI builds run on Apple Silicon, so the app is built for the host architecture. No notarization — Gatekeeper will prompt once.
 
