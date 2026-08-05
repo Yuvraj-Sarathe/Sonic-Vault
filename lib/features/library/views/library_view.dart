@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' hide Column;
 import '../../../core/audio/audio_service.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/utils/cover_art_helper.dart';
+import '../../../core/utils/media_scanner.dart';
 import '../../../providers/song_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/audio_providers.dart';
