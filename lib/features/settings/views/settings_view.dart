@@ -229,7 +229,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                       const ListTile(
                         leading: Icon(Icons.info_outline),
                         title: Text('Version'),
-                        subtitle: Text('1.3.6'),
+                        subtitle: Text('1.3.7'),
                       ),
                       const Divider(height: 1, indent: 16, endIndent: 16),
                       ListTile(
