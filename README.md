@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.png" alt="Sonic Vault logo" width="120">
+</p>
+
 # 🎵 Sonic Vault
 
 **Your music. Your covers. Your lyrics. Your rules.**
@@ -10,8 +14,8 @@ Sonic Vault is a free, open-source, **offline-first** music player for Windows, 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/Yuvraj-Sarathe/Sonic-Vault)](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases)
 [![Website](https://img.shields.io/badge/website-github.io-blue)](https://yuvraj-sarathe.github.io/Sonic-Vault/)
-[![Get it on Obtainium](https://img.shields.io/badge/Get%20it%20on-Obtainium-107C41?style=for-the-badge&logo=android&logoColor=white)](https://app.obtainium.imranr.dev/add?r=https://github.com/Yuvraj-Sarathe/Sonic-Vault)
-[![Get it on F-Droid](https://img.shields.io/badge/Get%20it%20on-F--Droid-1976D2?style=for-the-badge&logo=fdroid&logoColor=white)](https://yuvraj-sarathe.github.io/Sonic-Vault/repo)
+[![Get it on F-Droid](https://fdroid.gitlab.io/artwork/badge/get-it-on.png)](https://yuvraj-sarathe.github.io/Sonic-Vault/repo)
+[![Get it on Obtainium](https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png)](https://app.obtainium.imranr.dev/add?r=https://github.com/Yuvraj-Sarathe/Sonic-Vault)
 
 > 🚨 **TESTERS NEEDED ASAP — Linux, macOS & iOS!**
 > The Linux and macOS builds work and pass CI, but real-world testing is what turns "it builds" into "it works" — and iOS is still being actively worked on. If you're on one of those platforms, grab a build, break things, and tell us about it. See the dedicated testers-wanted issues for a checklist: [Linux](https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues/1) · [macOS](https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues/2) · [iOS](https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues/3). Or check the [platform status table](#platforms) below.
