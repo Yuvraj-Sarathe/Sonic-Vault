@@ -71,14 +71,25 @@ Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Soni
 
 ### Android
 
-**Using [Obtainium](https://obtainium.imranr.dev)?** One tap adds Sonic Vault to your auto-updater:
+**Option A — Obtainium (recommended: automatic updates)**
+
+[Obtainium](https://obtainium.imranr.dev) is an open-source "app store without the store" — it tracks the GitHub repository and updates apps in place when a new release is published.
+
+1. Install Obtainium from its [GitHub releases](https://github.com/ImranR98/Obtainium/releases) (it isn't on the Play Store)
+2. Add Sonic Vault by tapping the button below (it pre-fills the app source), or manually: open Obtainium → **Add App** → paste the source URL **`https://github.com/Yuvraj-Sarathe/Sonic-Vault`** → tap **Add**
+3. Obtainium reads the GitHub Releases page, finds `app-release.apk`, and lists Sonic Vault with its current version. Keep that repo link in your account — it's what Obtainium checks for updates, and it can auto-update the app whenever a new version is published.
 
 [![Get it on Obtainium](https://img.shields.io/badge/Get%20it%20on-Obtainium-107C41?style=for-the-badge&logo=android&logoColor=white)](https://app.obtainium.imranr.dev/add?r=https://github.com/Yuvraj-Sarathe/Sonic-Vault)
 
-**Prefer F-Droid?** Sonic Vault also runs a self-hosted F-Droid repository — add it once in any F-Droid client (F-Droid, Droidify, Neo Store) and updates arrive automatically:
+**Option B — F-Droid client (self-hosted repo)**
 
-- Repository URL: `https://yuvraj-sarathe.github.io/Sonic-Vault/repo`
-- In F-Droid: **Settings → Repositories → Add repository** → paste the URL
+Sonic Vault runs its own F-Droid repository, hosted on GitHub Pages and rebuilt automatically on every release:
+
+1. In any F-Droid client (F-Droid, Droidify, Neo Store): **Settings → Repositories → Add repository**
+2. Paste the repository URL: `https://yuvraj-sarathe.github.io/Sonic-Vault/repo`
+3. Sonic Vault appears in the app list with the current version; updates arrive automatically when a new release rebuilds the repo
+
+**Option C — Manual APK install**
 
 1. Download `SonicVault-android-v*.apk` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
 2. On your phone, enable **Install from unknown sources** (Settings → Security → Install unknown apps → select your file manager/browser)
