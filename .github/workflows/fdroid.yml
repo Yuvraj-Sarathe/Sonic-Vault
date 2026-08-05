@@ -104,7 +104,9 @@ jobs:
           # entrypoint is `fdroid`. `fdroid update` reads metadata/, verifies
           # the APK in repo/ and writes index.xml, index-v1.jar (signed)
           # and index-v2.json.
-          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/repo -w /repo \
+          # Note: must run as root (no -u flag) — the image's fdroid wrapper
+          # script is not executable for non-root users.
+          docker run --rm -v "$PWD":/repo -w /repo \
             registry.gitlab.com/fdroid/docker-executable-fdroidserver:master update
 
       # ──────────────────────────────────────────────
