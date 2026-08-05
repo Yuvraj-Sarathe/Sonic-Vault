@@ -117,6 +117,10 @@ class MainActivity : FlutterActivity() {
         val treeUri = Uri.parse(treeUriString)
         val audioFiles = mutableListOf<String>()
         walkDocumentTree(this, treeUri, treeUri, audioFiles)
+        android.util.Log.i(
+            "SonicVault",
+            "SAF walk found ${audioFiles.size} audio files under $treeUriString"
+        )
         return audioFiles
     }
 
@@ -133,13 +137,18 @@ class MainActivity : FlutterActivity() {
         // treeUri is always the original SAF tree URI (required by
         // buildChildDocumentsUriUsingTree / buildDocumentUriUsingTree).
         // currentUri is the URI of the directory we're walking right now.
-        // Its document ID must come from getDocumentId(currentUri) — the
-        // root's getTreeDocumentId would re-list the root on every level,
-        // recursing forever and only ever scanning top-level files.
-        // getDocumentId handles both tree URIs (first call) and document
-        // URIs (recursion) since it delegates to getTreeDocumentId for trees.
+        // The root call receives the bare tree URI: its document ID must
+        // come from getTreeDocumentId, because getDocumentId throws on a
+        // tree URI ("Invalid URI") and would abort the walk before it reads
+        // a single child — which is exactly what the root call used to do.
+        // Recursive calls carry document URIs (tree-nested or plain), which
+        // getDocumentId accepts.
         val docId: String = try {
-            DocumentsContract.getDocumentId(currentUri)
+            if (depth == 0) {
+                DocumentsContract.getTreeDocumentId(currentUri)
+            } else {
+                DocumentsContract.getDocumentId(currentUri)
+            }
         } catch (_: Exception) {
             return
         }

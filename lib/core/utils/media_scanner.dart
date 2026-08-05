@@ -76,13 +76,20 @@ class MediaScanner {
   static Future<List<String>> _scanAndroid(String dirPath) async {
     final isTreeUri = dirPath.startsWith('content://');
 
+    // If the SAF walk errors out, remember why so it can be reported instead
+    // of hiding behind a generic "no files" fallback.
+    String? safError;
+
     if (isTreeUri) {
       try {
         final paths = await _channel.invokeListMethod<String>(
           'scanFolder',
           {'treeUri': dirPath},
         );
-        if (paths != null && paths.isNotEmpty) return paths;
+        if (paths != null && paths.isNotEmpty) {
+          debugPrint('SonicVault: SAF tree scan found ${paths.length} files');
+          return paths;
+        }
         debugPrint(
           'SonicVault: SAF tree scan found no files — '
           'falling back to MediaStore',
@@ -90,9 +97,11 @@ class MediaScanner {
       } on MissingPluginException {
         // No native side — fall through to MediaStore
       } on PlatformException catch (e) {
-        debugPrint('SonicVault: SAF tree scan error [${e.code}]: ${e.message}');
+        safError = '[${e.code}] ${e.message ?? ''}';
+        debugPrint('SonicVault: SAF tree scan error: $safError');
       } catch (e) {
-        debugPrint('SonicVault: SAF tree scan failed: $e');
+        safError = '$e';
+        debugPrint('SonicVault: SAF tree scan failed: $safError');
       }
     }
 
@@ -107,7 +116,8 @@ class MediaScanner {
       throw PlatformException(
         code: 'PERMISSION_DENIED',
         message: 'Media access permission denied (${permission.name}). '
-            'The selected folder could not be scanned.',
+            'The selected folder could not be scanned.'
+            '${safError != null ? ' Folder walk also failed: $safError' : ''}',
       );
     }
 
