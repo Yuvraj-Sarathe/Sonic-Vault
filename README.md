@@ -67,6 +67,10 @@ Grab the latest build from the [Releases](https://github.com/Yuvraj-Sarathe/Soni
 
 ### Android
 
+**Using [Obtainium](https://obtainium.imranr.dev)?** One tap adds Sonic Vault to your auto-updater:
+
+[![Get it on Obtainium](https://img.shields.io/badge/Get%20it%20on-Obtainium-107C41?style=for-the-badge&logo=android&logoColor=white)](https://app.obtainium.imranr.dev/add?r=https://github.com/Yuvraj-Sarathe/Sonic-Vault)
+
 1. Download `SonicVault-android-v*.apk` from [Releases](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)
 2. On your phone, enable **Install from unknown sources** (Settings → Security → Install unknown apps → select your file manager/browser)
 3. Open the APK file (via file manager or browser downloads) and tap **Install**
