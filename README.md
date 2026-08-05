@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.png" alt="Sonic Vault logo" width="120">
+  <img src="website/favicon-512.png" alt="Sonic Vault logo" width="120">
 </p>
 
 # 🎵 Sonic Vault
