@@ -91,11 +91,12 @@ jobs:
           cat > config.yml <<EOF
           repo_url: https://${REPO_OWNER}.github.io/${REPO_NAME}/repo
           repo_name: "SonicVault F-Droid Repository"
-          keystore: keystore.p12
-          keystorepass: "${KEYSTORE_PASS}"
-          keyalias: "${KEY_ALIAS}"
-          keypass: "${KEY_PASS}"
+          repo_keystore: keystore.p12
+          repo_keystorepass: "${KEYSTORE_PASS}"
+          repo_keyalias: "${KEY_ALIAS}"
+          repo_keypass: "${KEY_PASS}"
           EOF
+          chmod 600 config.yml
 
       - name: Generate F-Droid repo index (fdroidserver)
         if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
