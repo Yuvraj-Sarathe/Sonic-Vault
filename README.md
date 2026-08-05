@@ -33,6 +33,8 @@ Shortcuts work globally — from any screen in the app.
 
 ## Platforms
 
+<div align="center">
+
 | Platform | Status | Get it |
 |----------|--------|--------|
 | Windows  | ✅ Released | [Download](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest) |
@@ -40,6 +42,8 @@ Shortcuts work globally — from any screen in the app.
 | Linux    | ✅ Working — needs testers | [Build from source](#building-from-source) |
 | macOS    | ✅ Working — needs testers | [Build from source](#building-from-source) |
 | iOS      | 🛠️ Being worked on — testers wanted | [Build from source](#building-from-source) |
+
+</div>
 
 > 🧪 **Testers wanted!** We're actively working on **macOS, iOS & Linux** — they build and run, but real-world testing is what turns "it builds" into "it works". If you're on one of those platforms, give it a try and **feel free to open an issue** for anything you hit (or anything you love): [Open an issue](https://github.com/Yuvraj-Sarathe/Sonic-Vault/issues/new).
 >
