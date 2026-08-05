@@ -38,7 +38,7 @@ Future<bool> ensureMediaPermission(BuildContext context) async {
   );
 
   if (openSettings == true) {
-    await Permission.openAppSettings();
+    await openAppSettings();
   }
   return false;
 }
