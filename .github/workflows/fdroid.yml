@@ -100,11 +100,12 @@ jobs:
       - name: Generate F-Droid repo index (fdroidserver)
         if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         run: |
-          # Official fdroidserver image; entrypoint is `fdroid`.
-          # `fdroid update` reads metadata/, verifies the APK in repo/ and
-          # writes index.xml, index-v1.jar (signed) and index-v2.json.
-          docker run --rm -v "$PWD":/repo -w /repo \
-            registry.gitlab.com/fdroid/fdroidserver:latest update
+          # Official fdroidserver image (docker-executable-fdroidserver);
+          # entrypoint is `fdroid`. `fdroid update` reads metadata/, verifies
+          # the APK in repo/ and writes index.xml, index-v1.jar (signed)
+          # and index-v2.json.
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/repo -w /repo \
+            registry.gitlab.com/fdroid/docker-executable-fdroidserver:master update
 
       # ──────────────────────────────────────────────
       # Deploy to GitHub Pages
