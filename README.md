@@ -5,7 +5,7 @@ The ultimate offline music player — your music, your covers, your lyrics, your
 [![Sonic Vault CI](https://github.com/Yuvraj-Sarathe/Sonic-Vault/actions/workflows/sonic-vault-ci.yml/badge.svg)](https://github.com/Yuvraj-Sarathe/Sonic-Vault/actions/workflows/sonic-vault-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/Yuvraj-Sarathe/Sonic-Vault)](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases)
-[![Website](https://img.shields.io/badge/website-sonicvault.vercel.app-blue)](https://sonicvault.vercel.app)
+[![Website](https://img.shields.io/badge/website-github.io-blue)](https://yuvraj-sarathe.github.io/Sonic-Vault/)
 
 ## Features
 
@@ -187,7 +187,7 @@ Sonic Vault/
 ├── linux/                        # Linux desktop platform files
 ├── macos/                        # macOS platform files
 ├── test/                         # Dart tests
-├── website/                      # Showcase website (Vercel-deployed)
+├── website/                      # Showcase website (GitHub Pages)
 ├── cert/                         # Code signing certificates
 ├── installer/                    # Inno Setup installer script
 ├── .github/workflows/            # CI/CD pipelines
@@ -216,7 +216,7 @@ This project uses GitHub Actions for continuous integration and delivery:
 
 ## Website
 
-The showcase website is at **[sonicvault.vercel.app](https://sonicvault.vercel.app)** (source in `website/`).
+The showcase website is at **[yuvraj-sarathe.github.io/Sonic-Vault](https://yuvraj-sarathe.github.io/Sonic-Vault/)** (source in `website/`, hosted on GitHub Pages together with the F-Droid repository).
 
 ## License
 
