@@ -120,11 +120,20 @@ jobs:
       # ──────────────────────────────────────────────
       # Deploy to GitHub Pages
       # ──────────────────────────────────────────────
+      # upload-pages-artifact flattens the given path, so stage the repo
+      # files under site/repo/ to keep the documented repo URL
+      # https://<owner>.github.io/<repo>/repo
+      - name: Stage Pages site
+        if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
+        run: |
+          mkdir site
+          mv repo site/repo
+
       - name: Upload Pages artifact
         if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         uses: actions/upload-pages-artifact@v3
         with:
-          path: repo
+          path: site
 
       - name: Deploy to GitHub Pages
         id: deployment
