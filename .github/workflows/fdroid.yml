@@ -17,6 +17,11 @@ concurrency:
 jobs:
   build-fdroid:
     runs-on: ubuntu-latest
+    env:
+      # `secrets` cannot be referenced inside `if:` expressions, so mirror
+      # the keystore secret into a job-level env var and test that instead.
+      # Unset secrets evaluate to an empty string.
+      FDROID_KEYSTORE_B64: ${{ secrets.FDROID_KEYSTORE_B64 }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,9 +37,9 @@ jobs:
       #   gh secret set FDROID_KEYSTORE_PASS -b "$(cat keystore.pass)"
       #   gh secret set FDROID_KEY_ALIAS -b fdroid
       #   gh secret set FDROID_KEY_PASS -b "$(cat keystore.pass)"
-      # Subsequent runs skip this step and decode the key from the secrets.
+      # Subsequent runs skip this step and decode the key from the secret.
       - name: Generate F-Droid signing key (first run only)
-        if: ${{ secrets.FDROID_KEYSTORE_B64 == '' }}
+        if: ${{ env.FDROID_KEYSTORE_B64 == '' }}
         run: |
           set -e
           PASS=$(openssl rand -hex 24)
@@ -46,7 +51,7 @@ jobs:
           base64 -w0 keystore.p12 > keystore.p12.b64
 
       - name: Upload signing key artifact (save it, then add as secret)
-        if: ${{ secrets.FDROID_KEYSTORE_B64 == '' }}
+        if: ${{ env.FDROID_KEYSTORE_B64 == '' }}
         uses: actions/upload-artifact@v4
         with:
           name: fdroid-keystore
@@ -59,18 +64,18 @@ jobs:
       # Build the F-Droid repo
       # ──────────────────────────────────────────────
       - name: Decode signing key
-        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         run: |
-          echo "${{ secrets.FDROID_KEYSTORE_B64 }}" | base64 -d > keystore.p12
+          printf '%s' "$FDROID_KEYSTORE_B64" | base64 -d > keystore.p12
 
       - name: Download latest release APK
-        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         run: |
           mkdir -p repo
           gh release download --pattern 'app-release.apk' --dir repo
 
       - name: Write fdroidserver config
-        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         env:
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
@@ -88,7 +93,7 @@ jobs:
           EOF
 
       - name: Generate F-Droid repo index (fdroidserver)
-        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         run: |
           # Official fdroidserver image; entrypoint is `fdroid`.
           # `fdroid update` reads metadata/, verifies the APK in repo/ and
@@ -100,12 +105,12 @@ jobs:
       # Deploy to GitHub Pages
       # ──────────────────────────────────────────────
       - name: Upload Pages artifact
-        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: repo
 
       - name: Deploy to GitHub Pages
         id: deployment
-        if: ${{ secrets.FDROID_KEYSTORE_B64 != '' }}
+        if: ${{ env.FDROID_KEYSTORE_B64 != '' }}
         uses: actions/deploy-pages@v4
