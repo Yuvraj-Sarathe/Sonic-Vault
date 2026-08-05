@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/audio/audio_service.dart';
 import '../../../core/theme/accent_colors.dart';
 import '../../../core/utils/media_scanner.dart';
 import '../../../providers/library_providers.dart';
+import '../../../shared/utils/media_permission.dart';
 
 class SettingsView extends ConsumerStatefulWidget {
   const SettingsView({super.key});
@@ -48,35 +48,18 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Future<void> _pickMusicFolder() async {
-    // On Android, we use the native SAF folder picker (content:// tree URI) —
-    // the OS handles scoped storage automatically; no MANAGE_EXTERNAL_STORAGE
-    // or runtime storage permissions needed.
-    // On other platforms (Windows, macOS, Linux), request storage permission.
-    if (!Platform.isAndroid) {
-      PermissionStatus status = PermissionStatus.granted;
-      if (await Permission.storage.isGranted) {
-        status = PermissionStatus.granted;
-      } else {
-        status = await Permission.storage.request();
-      }
-      if (!status.isGranted) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Storage permission is required to scan music files.'),
-              action: SnackBarAction(
-                  label: 'Settings', onPressed: openAppSettings),
-            ),
-          );
-        }
-        return;
-      }
+    // Android: media access is required for the MediaStore fallback scan.
+    // Ask up front so a denial can be recovered from via app settings.
+    if (Platform.isAndroid) {
+      final granted = await ensureMediaPermission(context);
+      if (!granted) return; // Denied — dialog offered Open Settings
     }
 
     // On Android, use the native SAF picker which returns a raw content:// URI.
     // FilePicker.getDirectoryPath converts SAF URIs to filesystem paths,
     // which defeats the tree walker on Android 11+ scoped storage.
+    // On desktop no runtime permission is needed — the OS folder dialog is
+    // sufficient (permission_handler_windows always rejects Permission.storage).
     late final String? dirPath;
     if (Platform.isAndroid) {
       dirPath = await MediaScanner.pickFolder();
@@ -246,7 +229,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                       const ListTile(
                         leading: Icon(Icons.info_outline),
                         title: Text('Version'),
-                        subtitle: Text('1.3.5'),
+                        subtitle: Text('1.3.6'),
                       ),
                       const Divider(height: 1, indent: 16, endIndent: 16),
                       ListTile(

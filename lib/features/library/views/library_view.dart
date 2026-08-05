@@ -11,6 +11,7 @@ import '../../../core/utils/media_scanner.dart';
 import '../../../providers/song_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/audio_providers.dart';
+import '../../../shared/utils/media_permission.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/song_tile.dart';
@@ -351,6 +352,16 @@ class LibraryView extends ConsumerWidget {
 
   Future<void> _pickAndScanFolder(BuildContext context, WidgetRef ref) async {
     try {
+      // Android: media access is required for the MediaStore fallback scan,
+      // and a denied permission cannot always be re-requested (the system
+      // dialog stops appearing after repeated denials) — the user then has
+      // to enable it in app settings. Ask up front so there is a clear path
+      // forward instead of a dead-end error after picking a folder.
+      if (Platform.isAndroid) {
+        final granted = await ensureMediaPermission(context);
+        if (!granted) return; // Denied — dialog offered Open Settings
+      }
+
       // Android: native SAF picker returning a raw content:// tree URI
       // (file_picker's getDirectoryPath converts it to a filesystem path
       // that dart:io cannot read under scoped storage).
