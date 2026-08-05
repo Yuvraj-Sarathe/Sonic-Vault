@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'file_utils.dart';
 
 /// Scans for audio files using platform-specific APIs.
@@ -91,7 +92,20 @@ class MediaScanner {
       }
     }
 
-    // Fallback to legacy MediaStore scan for backward compatibility
+    // Fallback to legacy MediaStore scan for backward compatibility.
+    // MediaStore requires a runtime permission (READ_MEDIA_AUDIO on
+    // Android 13+, READ_EXTERNAL_STORAGE below — permission_handler maps
+    // Permission.audio to the right one), which is never granted by
+    // default, so request it before querying.
+    final permission = await Permission.audio.request();
+    if (!permission.isGranted) {
+      debugPrint(
+        'SonicVault: MediaStore scan skipped — media permission denied '
+        '(${permission.name})',
+      );
+      return [];
+    }
+
     try {
       final paths = await _channel.invokeListMethod<String>('scanMusic');
       if (paths == null || paths.isEmpty) return [];

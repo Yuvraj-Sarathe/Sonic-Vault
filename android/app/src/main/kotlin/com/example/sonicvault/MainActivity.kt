@@ -34,7 +34,11 @@ class MainActivity : FlutterActivity() {
                             pendingFolderResult = result
                             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
                                 addFlags(
-                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                        // Without this flag, takePersistableUriPermission
+                                        // throws SecurityException and the folder grant is
+                                        // lost as soon as the app is restarted.
+                                        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                                 )
                             }
                             startActivityForResult(intent, REQUEST_CODE_FOLDER_PICKER)
@@ -120,16 +124,24 @@ class MainActivity : FlutterActivity() {
         context: Context,
         treeUri: Uri,
         currentUri: Uri,
-        results: MutableList<String>
+        results: MutableList<String>,
+        depth: Int = 0
     ) {
+        // Guard against runaway recursion in malformed providers.
+        if (depth > 64) return
+
         // treeUri is always the original SAF tree URI (required by
         // buildChildDocumentsUriUsingTree / buildDocumentUriUsingTree).
-        // currentUri is the URI of the directory we're walking right now
-        // (used to extract its document ID via getDocumentId).
+        // currentUri is the URI of the directory we're walking right now.
+        // Its document ID must come from getDocumentId(currentUri) — the
+        // root's getTreeDocumentId would re-list the root on every level,
+        // recursing forever and only ever scanning top-level files.
+        // getDocumentId handles both tree URIs (first call) and document
+        // URIs (recursion) since it delegates to getTreeDocumentId for trees.
         val docId: String = try {
-            DocumentsContract.getTreeDocumentId(treeUri)
-        } catch (_: Exception) {
             DocumentsContract.getDocumentId(currentUri)
+        } catch (_: Exception) {
+            return
         }
         val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
 
@@ -162,7 +174,7 @@ class MainActivity : FlutterActivity() {
 
                 if (DocumentsContract.Document.MIME_TYPE_DIR == mimeType) {
                     val childUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
-                    walkDocumentTree(context, treeUri, childUri, results)
+                    walkDocumentTree(context, treeUri, childUri, results, depth + 1)
                 } else if (mimeType?.startsWith("audio/") == true ||
                     lowerName.endsWith(".mp3") || lowerName.endsWith(".flac") ||
                     lowerName.endsWith(".wav") || lowerName.endsWith(".ogg") ||
@@ -214,10 +226,16 @@ class MainActivity : FlutterActivity() {
             var coverBytes: ByteArray? = null
             var hasCoverArt = false
             try {
-                val pictureBytes = retriever.embeddedPicture
-                if (pictureBytes != null && pictureBytes.isNotEmpty()) {
-                    hasCoverArt = true
-                    coverBytes = pictureBytes
+                // getEmbeddedPicture() only exists on API 33+. Calling it on
+                // older devices throws NoSuchMethodError (an Error, not an
+                // Exception), which would escape the catch blocks below, so
+                // gate it by SDK level.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val pictureBytes = retriever.embeddedPicture
+                    if (pictureBytes != null && pictureBytes.isNotEmpty()) {
+                        hasCoverArt = true
+                        coverBytes = pictureBytes
+                    }
                 }
             } catch (_: Exception) {
                 // Some files don't support embedded picture extraction
@@ -285,9 +303,12 @@ class MainActivity : FlutterActivity() {
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         }
 
+        // Always resolve via content URIs. Under scoped storage the DATA
+        // column is null on API 33+ and points at raw paths the app cannot
+        // open on API 30-32, which would break metadata extraction and
+        // playback. Content URIs work on every API level.
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.DISPLAY_NAME
         )
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
@@ -296,30 +317,18 @@ class MainActivity : FlutterActivity() {
         try {
             cursor = contentResolver.query(uri, projection, null, null, sortOrder)
             cursor?.use { c ->
-                val dataIndex = c.getColumnIndex(MediaStore.Audio.Media.DATA)
                 val idIndex = c.getColumnIndex(MediaStore.Audio.Media._ID)
                 val nameIndex = c.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
                 while (c.moveToNext()) {
-                    val path = c.getString(dataIndex)
-                    val fileRef: String
-                    val checkName: String
-                    if (path != null) {
-                        fileRef = path
-                        checkName = path
-                    } else if (idIndex >= 0) {
-                        val id = c.getLong(idIndex)
-                        fileRef = ContentUris.withAppendedId(uri, id).toString()
-                        checkName = c.getString(nameIndex) ?: "unknown"
-                    } else {
-                        continue
-                    }
-                    val lower = checkName.lowercase()
+                    val id = c.getLong(idIndex)
+                    val name = c.getString(nameIndex) ?: continue
+                    val lower = name.lowercase()
                     if (lower.endsWith(".mp3") || lower.endsWith(".flac") ||
                         lower.endsWith(".wav") || lower.endsWith(".ogg") ||
                         lower.endsWith(".aac") || lower.endsWith(".m4a") ||
                         lower.endsWith(".opus") || lower.endsWith(".wma")
                     ) {
-                        paths.add(fileRef)
+                        paths.add(ContentUris.withAppendedId(uri, id).toString())
                     }
                 }
             }

@@ -350,7 +350,7 @@ class LibraryView extends ConsumerWidget {
 
   Future<void> _pickAndScanFolder(BuildContext context, WidgetRef ref) async {
     try {
-      final dirPath = await FilePicker.getDirectoryPath();
+      final dirPath = await MediaScanner.pickFolder();
       if (dirPath == null) return; // User cancelled
 
       await ref.read(libraryScanProvider.notifier).scanFolder(dirPath);
