@@ -8,7 +8,7 @@
 
 Sonic Vault is a free, open-source, **offline-first** music player for Windows, Android, Linux, and macOS (iOS in progress). It plays your local library — no streaming, no subscriptions, no accounts — and puts *you* in charge of covers, lyrics, playlists, and playback. Point it at your music folder, press play, and your library belongs to you again.
 
-**Current version: [v1.3.7](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)**
+**Current version: [v1.3.8](https://github.com/Yuvraj-Sarathe/Sonic-Vault/releases/latest)**
 
 [![Sonic Vault CI](https://github.com/Yuvraj-Sarathe/Sonic-Vault/actions/workflows/sonic-vault-ci.yml/badge.svg)](https://github.com/Yuvraj-Sarathe/Sonic-Vault/actions/workflows/sonic-vault-ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
